@@ -10,7 +10,6 @@ import (
 	"github.com/go-gl/glfw/v3.1/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 	"log"
-	"math"
 )
 
 const windowWidth = 1024
@@ -19,9 +18,6 @@ const windowFPS = 60
 
 // The Window Wrapper
 var glw *wrapper.Glw
-
-// Define buffer object indices
-var positionBufferObject, colourObject, normalsBufferObject uint32
 
 // Vertex array (Container) object.
 var vertexArrayObject uint32
@@ -43,11 +39,7 @@ var selected_model models.Model
 
 // Models
 var view					*models.Camera
-var sphere, lightPoint		*models.Sphere
-var cube					*models.Cube
-var cylinder, smallCylinder	*models.Cylinder
-var cog, smallCog			*models.Cog
-var planets 				[]*models.Sphere
+var lightPoint				*models.Sphere
 
 // Index of a uniform to switch the colour mode in the vertex shader
 var colorMode models.ColorMode
@@ -105,7 +97,7 @@ func main() {
 func InitShaders () {
 	// Creates the Shader Program
 	shaderManager = wrapper.NewShaderManager()
-	var err error; err = shaderManager.LoadShader("default", "./shaders/basic.vert", "./shaders/basic.frag")
+	var err error; err = shaderManager.LoadShader("default", "./resources/shaders/basic.vert", "./resources/shaders/basic.frag")
 
 	// If there is any error loading the shaders, it panics
 	if err != nil {
@@ -113,7 +105,7 @@ func InitShaders () {
 	}
 
 	// Creates the Shader Program
-	err = shaderManager.LoadShader("shiny", "./shaders/shiny.vert", "./shaders/shiny.frag")
+	err = shaderManager.LoadShader("shiny", "./resources/shaders/shiny.vert", "./resources/shaders/shiny.frag")
 
 	// If there is any error loading the shaders, it panics
 	if err != nil {
@@ -121,7 +113,7 @@ func InitShaders () {
 	}
 
 
-	err = shaderManager.LoadShader("fragment_light", "./shaders/fragment_light.vert", "./shaders/fragment_light.frag")
+	err = shaderManager.LoadShader("fragment_light", "./resources/shaders/fragment_light.vert", "./resources/shaders/fragment_light.frag")
 
 	// If there is any error loading the shaders, it panics
 	if err != nil {
@@ -150,8 +142,6 @@ func InitApp(glw *wrapper.Glw) {
 	aspect_ratio = 1.3333
 	colorMode = models.COLOR_SOLID
 	emitMode = models.EMIT_COLORED
-	var numLats uint32 = 40        // Number of latitudes in our sphere
-	var numLongs uint32 = 40        // Number of longitudes in our sphere
 
 	// Generate index (name) for one vertex array object
 	gl.GenVertexArrays(1, &vertexArrayObject);
@@ -168,66 +158,6 @@ func InitApp(glw *wrapper.Glw) {
 		mgl32.Vec3{0, 1, 0},	// Head is up (set to 0,-1,0 to look upside-down)
 	))
 
-	// Create the Cube Object
-	cube = models.NewCube(
-		"The Cube",			// Name
-		&vertexPositions,	// The Vertex Positions
-		&vertexColours,		// The Vertex Colours
-		&normals,			// The Normals
-		shaderManager,		// A pointer to the ShaderManager
-	);
-	cube.MakeVBO() // Creates the Cube Buffer's Object
-
-	// create the sphere object
-	sphere = models.NewSphere(
-		"The Sphere",	// Name
-		numLats,		// Latitudes
-		numLongs,		// Longitudes
-		shaderManager,	// A pointer to the ShaderManager
-	);
-	sphere.MakeSphereVBO() // Creates the Sphere Buffer Object
-
-	// create the cylinder Object
-	cylinder = models.NewCylinder(
-		"The Cylinder",	// Name
-		15,				// Vertices
-		0.4,			// Height
-		0.1,			// Radius
-		shaderManager,	// A pointer to the ShaderManager
-	)
-	cylinder.MakeCylinderVBO() // Creates the Cylinder Buffer Object
-
-	// create the cylinder Object
-	smallCylinder = models.NewCylinder(
-	"Small Cylinder",	// Name
-	10,					// Vertices
-	1.0,				// Height
-	0.03,				// Radius
-	shaderManager,		// A pointer to the ShaderManager
-	)
-	smallCylinder.MakeCylinderVBO() // Creates the Cylinder Buffer Object
-
-	// Create the Cog Object
-	cog = models.NewCog(
-		"The Cog",		// Name
-		100,			// Vertices
-		0.04,			// Height
-		0.45,			// Radius
-		0.5,			// Tooth Size
-		shaderManager,	// A pointer to the ShaderManager
-	)
-	cog.MakeCogVBO() // Creates the Cog Buffer Object
-
-	smallCog = models.NewCog(
-		"The Small Cog",	// Name
-		60,					// Vertices
-		0.04, 				// Height
-		0.24, 				// Radius
-		0.3, 				// Tooth Size
-		shaderManager,		// A pointer to the ShaderManager
-	)
-	smallCog.MakeCogVBO() // Creates the Small Cog Buffer Object
-
     // Creates the Lightpoint indicator
     lightPoint = models.NewSphere(
 		"Light Point", 	// Name
@@ -236,18 +166,6 @@ func InitApp(glw *wrapper.Glw) {
 		shaderManager,	// A pointer to the ShaderManager
 	)
     lightPoint.MakeSphereVBO() // Creates the Light Point Buffer Object
-
-	// Creates the Planets
-	planets = make([]*models.Sphere, 100)
-	for index, _ := range planets {
-		planets[index] = models.NewSphere(
-			fmt.Sprintf("Planet %d", index),	// Name
-			numLats,							// Latitudes
-			numLongs,							// Longitudes
-			shaderManager,						// A pointer to the ShaderManager
-		)
-		planets[index].MakeSphereVBO() // Creates the Planet's Buffer Object
-	}
 
 	// Applies Initial Transforms to the Models
 	InitialModelTransforms()
@@ -264,48 +182,6 @@ func InitApp(glw *wrapper.Glw) {
 // Applies the Initial transforms for the Models
 //
 func InitialModelTransforms () {
-	// Define the model transformations for the cube
-	cube.ResetModel()
-	cube.Translate(1.0, 0.0, 0.0)
-	cube.Scale(1.0, 1.0, 1.0) //scale equally in all axis
-	cube.Rotate(0, mgl32.Vec3{1, 0, 0}) //rotating in clockwise direction around x-axis
-	cube.Rotate(0, mgl32.Vec3{0, 1, 0}) //rotating in clockwise direction around y-axis
-	cube.Rotate(0, mgl32.Vec3{0, 0, 1}) //rotating in clockwise direction around z-axis
-
-	// Define the model transformations for the Cylinder
-	cylinder.ResetModel()
-	cylinder.Translate(1.0, 0.4, 0)
-	cylinder.Scale(1.0, 1.0, 1.0) //scale equally in all axis
-	cylinder.Rotate(0, mgl32.Vec3{1, 0, 0}) //rotating in clockwise direction around x-axis
-	cylinder.Rotate(0, mgl32.Vec3{0, 1, 0}) //rotating in clockwise direction around y-axis
-	cylinder.Rotate(0, mgl32.Vec3{0, 0, 1}) //rotating in clockwise direction around z-axis
-
-	// Define the model transformations for the Cylinder
-	smallCylinder.ResetModel()
-	smallCylinder.Translate(1.75, 0.25, 0)
-	smallCylinder.Scale(1.0, 1.0, 1.0) //scale equally in all axis
-	smallCylinder.Rotate(0, mgl32.Vec3{1, 0, 0}) //rotating in clockwise direction around x-axis
-	smallCylinder.Rotate(0, mgl32.Vec3{0, 1, 0}) //rotating in clockwise direction around y-axis
-	smallCylinder.Rotate(0, mgl32.Vec3{0, 0, 1}) //rotating in clockwise direction around z-axis
-
-	// Define the model transformations for the Cog
-	cog.ResetModel()
-	cog.Translate(1.0, 0.5, 0.0)
-	cog.Scale(1.0, 1.0, 1.0) //scale equally in all axis
-
-	smallCog.ResetModel()
-	smallCog.Translate(1.75, 0.5, 0)
-	smallCog.Scale(1.0, 1.0, 1.0) //scale equally in all axis
-
-
-	// Define the model transformations for our sphere
-	sphere.ResetModel()
-	sphere.Translate(-1.0, 0, 0)
-	sphere.Scale(1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0) //scale equally in all axis
-	sphere.Rotate(0, mgl32.Vec3{1, 0, 0}) //rotating in clockwise direction around x-axis
-	sphere.Rotate(0, mgl32.Vec3{0, 1, 0}) //rotating in clockwise direction around y-axis
-	sphere.Rotate(0, mgl32.Vec3{0, 0, 1}) //rotating in clockwise direction around z-axis
-
 	// Define the model transformations for the LightPoint
 	lightPoint.ResetModel()
 	lightPoint.Translate(0.0, 0.0, 1.0)
@@ -315,23 +191,6 @@ func InitialModelTransforms () {
 	view.Rotate(0, mgl32.Vec3{1, 0, 0}) //rotating in clockwise direction around x-axis
 	view.Rotate(0, mgl32.Vec3{0, 1, 0}) //rotating in clockwise direction around y-axis
 	view.Rotate(0, mgl32.Vec3{0, 0, 1})
-
-
-	for index, planet := range planets {
-		planet.ResetModel()
-
-		step := (360 / 100) * float32(index)
-		var x float32 = (float32(index) * 1.5) * float32(math.Cos(float64(step * models.DEG_TO_RADIANS)))
-		var y float32 = float32(index) * 0.4
-		var z float32 = (float32(index) * 1.5) * float32(math.Sin(float64(step * models.DEG_TO_RADIANS)))
-
-		planetSize := (0.05 * float32(index))
-		planet.Translate(x, y, z)
-		planet.Scale(planetSize, planetSize, planetSize) //scale equally in all axis
-		planet.Rotate(0, mgl32.Vec3{1, 0, 0}) //rotating in clockwise direction around x-axis
-		planet.Rotate(0, mgl32.Vec3{0, 1, 0}) //rotating in clockwise direction around y-axis
-		planet.Rotate(0, mgl32.Vec3{0, 0, 1}) //rotating in clockwise direction around z-axis
-	}
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -344,7 +203,7 @@ func InitialModelTransforms () {
 //
 func drawLoop(glw *wrapper.Glw, delta float64) {
 	// Sets the Clear Color (Background Color)
-	gl.ClearColor(0.1, 0.1, 0.1, 1.0)
+	gl.ClearColor(0.0, 0.8274509804, 0.9490196078, 1.0)
 
 	// Clears the Window
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
@@ -356,8 +215,8 @@ func drawLoop(glw *wrapper.Glw, delta float64) {
 	applyAnimations(delta)
 
 	// Fov / Aspect / Near / Far
-	// Projection matrix : 45° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
-	var Projection mgl32.Mat4 = mgl32.Perspective(45.0, aspect_ratio, 0.1, 100.0)
+	// Projection matrix : 30° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
+	var Projection mgl32.Mat4 = mgl32.Perspective(30.0, aspect_ratio, 0.1, 100.0)
 
     // Define the light position and transform by the view matrix
 	var lightpos mgl32.Vec4 = view.Model.Mul4x1(mgl32.Vec4{lightPoint.Position.X(), lightPoint.Position.Y(), lightPoint.Position.Z(), 1.0})
@@ -376,26 +235,8 @@ func drawLoop(glw *wrapper.Glw, delta float64) {
 
 	// Sets the Shader program to Use
 	shaderManager.EnableShader("shiny")
-
-
-	cube.Draw()				// Draws the Cube
-	cylinder.Draw()			// Draws the Cylinder
-	cog.Draw()				// Draws the Cog
-	smallCog.Draw() 		// Draws the Small Cog
-	smallCylinder.Draw()	// Draws the Small Cylinder
-
 	shaderManager.EnableShader("default")
-
-	sphere.Draw()	// Draw our sphere
-
-	// Sets the Shader program to Use
 	shaderManager.EnableShader("shiny")
-
-	// Draws the Planets
-	for _, planet := range planets {
-		planet.Draw()
-	}
-
 	shaderManager.EnableShader("default")
 
     // Draw our light Position sphere
@@ -416,33 +257,7 @@ func drawLoop(glw *wrapper.Glw, delta float64) {
 // @param delta (float64) delta time of the update
 //
 func applyAnimations (delta float64) {
-	// Animate the Cog
-	cog.Rotate(float32(speed * delta), mgl32.Vec3{0, 1, 0})
 
-	// Animate the Small Cog
-	smallCog.Rotate(float32((-speed * 1.5) * delta), mgl32.Vec3{0, 1, 0})
-
-	// Animate the Planets
-	for index, planet := range planets {
-		// Gets the current Progress
-		animationProgress += float32(delta) * float32(len(planets) - index)
-
-		// Calculates the Next Step
-		step := (360.0 / 100000.0) * float64(len(planets) - index) * float64(animationProgress)
-
-		// Calculates the Next position
-		var x float32 = (float32(index) * 1.3) * float32(math.Cos(step * float64(models.DEG_TO_RADIANS)))
-		var y float32 = float32(index) * float32(math.Cos(float64(index)))
-		var z float32 = (float32(index) * 0.8) * float32(math.Sin(step * float64(models.DEG_TO_RADIANS)))
-
-		// Maintains the Planet Scale
-		planetSize := (0.05 * float32(index))
-
-		// Resets model and applies transformations
-		planet.ResetModel()
-		planet.Translate(x, y, z)
-		planet.Scale(planetSize, planetSize, planetSize) //scale equally in all axis
-	}
 }
 
 //
@@ -472,132 +287,101 @@ func keyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Ac
 		if action == glfw.Press {
 			window.SetShouldClose(true)
 		}
-		break
 
 	// Changes the Selected Model
 	case glfw.Key1:
-		selected_model = cube
-		break
+		selected_model = lightPoint
 
 	case glfw.Key2:
-		selected_model = sphere
-		break
+		selected_model = lightPoint
 
 	case glfw.Key3:
-		selected_model = cylinder
-		break
+		selected_model = lightPoint
 
 	case glfw.Key4:
-		selected_model = cog
-		break
+		selected_model = lightPoint
 
 	case glfw.Key5:
-		selected_model = smallCog
-		break
+		selected_model = lightPoint
 
 	case glfw.Key6:
 		selected_model = lightPoint
-		break
 
 	case glfw.Key7:
 		selected_model = lightPoint
-		break
 
 	case glfw.Key8:
 		selected_model = lightPoint
-		break
 
 	case glfw.Key9:
 		selected_model = view
-		break
 
 	case glfw.Key0:
 		selected_model = lightPoint
-		break
 
 	// Applies Movement
 	case glfw.KeyQ:
 		position = mgl32.Vec4{0, 0, keySpeed, 0}
-		break
 
 	case glfw.KeyW:
 		position = mgl32.Vec4{0, -keySpeed, 0, 0}
-		break
 
 	case glfw.KeyE:
 		position = mgl32.Vec4{0, 0, -keySpeed, 0}
-		break
 
 	case glfw.KeyA:
 		position = mgl32.Vec4{keySpeed, 0, 0, 0}
-		break
 
 	case glfw.KeyS:
 		position = mgl32.Vec4{0, keySpeed, 0, 0}
-		break
 
 	case glfw.KeyD:
 		position = mgl32.Vec4{-keySpeed, 0, 0, 0}
-		break
 
 	case glfw.KeyTab:
 //		position = mgl32.Vec4{0, 0, 0, speed}
-		break
 
 	case glfw.KeyR:
 //		position = mgl32.Vec4{0, 0, 0, -speed}
-		break
 
 	// Rotates
 	case glfw.KeyI:
 		rotation = mgl32.Vec4{1, 0, 0, 0}
-		break
 
 	case glfw.KeyK:
 		rotation = mgl32.Vec4{-1, 0, 0, 0}
-		break
 
 	case glfw.KeyJ:
 		rotation = mgl32.Vec4{0, 1, 0, 0}
-		break
 
 	case glfw.KeyL:
 		rotation = mgl32.Vec4{0, -1, 0, 0}
-		break
 
 	case glfw.KeyU:
 		rotation = mgl32.Vec4{0, 0, 1, 0}
-		break
 
 	case glfw.KeyO:
 		rotation = mgl32.Vec4{0, 0, -1, 0}
-		break
 
 	case glfw.KeyY:
 //		rotation = mgl32.Vec4{0, 0, 0, 1}
-		break
 
 	case glfw.KeyP:
 //		rotation = mgl32.Vec4{0, 0, 0, -1}
-		break
 
 	// Zooms In / Out
 	case glfw.KeyZ:
 		zoom = -0.02
-		break
 
 	case glfw.KeyX:
 		zoom = 0.02
-		break
 
 	// Speed Up / Down
 	case glfw.KeyC:
 		speed -= 1
-		break
 
 	case glfw.KeyV:
 		speed += 1
-		break
 	}
 
 	// Changes the Title of the Window to display the Selected Model
@@ -619,7 +403,6 @@ func keyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Ac
 			colorMode = models.COLOR_PER_SIDE
 		}
 		fmt.Printf("Color Mode: %s \n", colorMode)
-		break
 
 	// Cycle between drawing vertices, mesh and filled polygons
 	case glfw.KeyN:
@@ -628,16 +411,14 @@ func keyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Ac
 			selected_model.SetDrawMode(models.DRAW_POINTS)
 		}
 		fmt.Printf("%s Draw Mode: %s \n", selected_model.GetName(), selected_model.GetDrawMode())
-		break
 
 	// Prints the Keyboard Mappings
 	case glfw.KeyB:
 		printKeyboardMappings()
-		break
 
 	case glfw.KeyEnter:
 		// Creates the Shader Program
-		err := shaderManager.LoadShader("default", "./shaders/basic.vert", "./shaders/basic.frag")
+		err := shaderManager.LoadShader("default", "./resources/shaders/basic.vert", "./resources/shaders/basic.frag")
 
 		// If there is any error loading the shaders, it panics
 		if err != nil {
@@ -645,23 +426,21 @@ func keyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Ac
 		}
 
 		// Creates the Shader Program
-		err = shaderManager.LoadShader("shiny", "./shaders/shiny.vert", "./shaders/shiny.frag")
+		err = shaderManager.LoadShader("shiny", "./resources/shaders/shiny.vert", "./resources/shaders/shiny.frag")
 
 		// If there is any error loading the shaders, it panics
 		if err != nil {
 			log.Println(err)
 		}
 
-		err = shaderManager.LoadShader("fragment_light", "./shaders/fragment_light.vert", "./shaders/fragment_light.frag")
+		err = shaderManager.LoadShader("fragment_light", "./resources/shaders/fragment_light.vert", "./resources/shaders/fragment_light.frag")
 
 		// If there is any error loading the shaders, it panics
 		if err != nil {
 			log.Println(err)
 		}
-		break;
 	case glfw.KeySpace:
 		fmt.Println(selected_model)
-		break
 	}
 }
 
