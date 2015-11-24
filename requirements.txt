@@ -1,0 +1,8 @@
+github.com/go-gl/gl/all-core/gl
+
+github.com/go-gl/glfw/v3.1/glfw
+github.com/go-gl/mathgl/mgl32
+
+github.com/kardianos/osext
+
+github.com/codegangsta/cli
