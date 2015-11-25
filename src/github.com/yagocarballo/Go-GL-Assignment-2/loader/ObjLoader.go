@@ -15,6 +15,7 @@ import (
 	"strings"
 	"fmt"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/yagocarballo/Go-GL-Assignment-2/wrapper"
 )
 
 type ObjectData struct {
@@ -114,7 +115,7 @@ func (loader *Loader) Load (filename string) (objectsData []*ObjectData, err err
 				if objectData.Material != nil {
 					if objectData.Material.MapBump != "" {
 						var bumperr error
-						objectData.NormalMap, bumperr = loader.LoadTexture("models/" + objectData.Material.MapBump)
+						objectData.NormalMap, bumperr = loader.LoadTexture("resources/models/" + objectData.Material.MapBump)
 						if bumperr != nil {
 							return objectsData, fmt.Errorf("Bump Map %s: %s", objectData.Material.MapBump, bumperr)
 						}
@@ -123,7 +124,7 @@ func (loader *Loader) Load (filename string) (objectsData []*ObjectData, err err
 					if objectData.Material.MapKD != "" {
 						var texErr error
 						// Load the texture
-						objectData.Texture, texErr = loader.LoadTexture("models/" + objectData.Material.MapKD)
+						objectData.Texture, texErr = loader.LoadTexture("resources/models/" + objectData.Material.MapKD)
 						if texErr != nil {
 							return objectsData, fmt.Errorf("Texture %s: %s", objectData.Material.MapKD, texErr)
 						}
@@ -132,7 +133,7 @@ func (loader *Loader) Load (filename string) (objectsData []*ObjectData, err err
 					if objectData.Material.MapKS != "" {
 						var specErr error
 						// Load the texture
-						objectData.SpecularMap, specErr = loader.LoadTexture("models/" + objectData.Material.MapKS)
+						objectData.SpecularMap, specErr = loader.LoadTexture("resources/models/" + objectData.Material.MapKS)
 						if specErr != nil {
 							return objectsData, fmt.Errorf("Specular Map %s: %s", objectData.Material.MapKS, specErr)
 						}
@@ -182,7 +183,7 @@ func (loader *Loader) objectToStrings(file *os.File) (objects []*objectStrings) 
 				log.Printf("could not parse materials %s", e)
 			}
 
-			mtlData, merr := loader.LoadMTL("models/" + mtlPath)
+			mtlData, merr := loader.LoadMTL("resources/models/" + mtlPath)
 			if merr != nil {
 				log.Printf("Loading Material %s: %s", mtlPath, merr)
 			}
@@ -264,9 +265,13 @@ func (loader *Loader) objectToData(lines []string, odata *objectData) (faces []f
 				odata.material = s1
 			}
 		case "s": 		// smoothing group - ignored for now.
-			log.Printf("- Obj - Smoothing Group not implemented: %s\n", line)
+			if wrapper.DEBUG {
+				log.Printf("- Obj - Smoothing Group not implemented: %s\n", line)
+			}
 		default:
-			log.Printf("- Obj - Feature not implemented: %s\n", line)
+			if wrapper.DEBUG {
+				log.Printf("- Obj - Feature not implemented: %s\n", line)
+			}
 		}
 	}
 	return

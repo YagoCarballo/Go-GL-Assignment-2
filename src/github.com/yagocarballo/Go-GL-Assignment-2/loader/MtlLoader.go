@@ -16,6 +16,7 @@ import (
 	"strings"
 	"log"
 	"os"
+	"github.com/yagocarballo/Go-GL-Assignment-2/wrapper"
 )
 
 // MtlData holds colour and alpha information.
@@ -136,7 +137,9 @@ func (loader *Loader) LoadMTL(filename string) (data []*MtlData, err error) {
 			}
 		case "#": // Comment, Ignore
 		default:
-			log.Printf("- Mtl - Feature not implemented: %s \n", line)
+			if wrapper.DEBUG {
+				log.Printf("- Mtl - Feature not implemented: %s \n", line)
+			}
 		}
 	}
 

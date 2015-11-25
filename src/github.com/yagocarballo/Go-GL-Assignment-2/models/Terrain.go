@@ -4,14 +4,11 @@
 package models
 
 import (
-	"log"
-
 	"github.com/go-gl/gl/all-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/ojrac/opensimplex-go"
+	"fmt"
 )
-
-const DEBUG  = false
 
 const (
 	SizeOfUint16 = 2
@@ -38,6 +35,9 @@ type Terrain struct  {
 	Noise				[]float32
 
 	Model				mgl32.Mat4
+
+	Name				string
+	DrawMode            DrawMode // Defines drawing mode of cube as points, lines or filled polygons
 }
 
 //	Define the vertex attributes for vertex positions and normals.
@@ -63,6 +63,9 @@ func NewTerrain () *Terrain {
 		[]float32{},	// Noise
 
 		mgl32.Ident4(), // Model
+
+		"Terrain",
+		DRAW_POLYGONS,
 	}
 }
 
@@ -100,7 +103,7 @@ Could improve efficiency by moving the vertex attribute pointer functions to the
 create object but this method is more general
 This code is almost untouched fomr the tutorial code except that I changed the
 number of elements per vertex from 4 to 3*/
-func (terrain *Terrain) DrawObject(shaderProgram, drawMode uint32) {
+func (terrain *Terrain) DrawObject(shaderProgram uint32) {
 	// Reads the uniform Locations
 	modelUniform := gl.GetUniformLocation(shaderProgram, gl.Str("model\x00"));
 
@@ -155,7 +158,7 @@ func (terrain *Terrain) DrawObject(shaderProgram, drawMode uint32) {
 	gl.GetBufferParameteriv(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE, &size);
 
 	// Enable this line to show model in wireframe
-	switch drawMode {
+	switch terrain.DrawMode {
 	case 1:
 		gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
 	case 2:
@@ -235,12 +238,12 @@ func (terrain *Terrain) CreateTerrain(xp, zp uint32, xs, zs float32) {
 	/* First calculate the noise array which we'll use for our vertex height values */
 	terrain.CalculateNoise(4.0, 5.0)
 
-	if DEBUG {
-		// Debug code to check that noise values are sensible
-		for i := uint32(0); i < (terrain.XSize * terrain.ZSize * terrain.PerlinOctaves); i++ {
-			log.Printf("\n noise[%d] = %f", i, terrain.Noise[i]);
-		}
-	}
+//	if wrapper.DEBUG {
+//		// Debug code to check that noise values are sensible
+//		for i := uint32(0); i < (terrain.XSize * terrain.ZSize * terrain.PerlinOctaves); i++ {
+//			log.Printf("\n noise[%d] = %f", i, terrain.Noise[i]);
+//		}
+//	}
 
 	/* Define starting (x,z) positions and the step changes */
 	xpos := -width / 2.0;
@@ -337,5 +340,26 @@ func (terrain *Terrain) Scale(scaleX, scaleY, scaleZ float32) {
 
 func (terrain *Terrain) Rotate(angle float32, axis mgl32.Vec3) {
 	terrain.Model = terrain.Model.Mul4(mgl32.HomogRotate3D(angle, axis))
+}
+
+func (terrain *Terrain) GetDrawMode () DrawMode {
+	return terrain.DrawMode
+}
+
+func (terrain *Terrain) SetDrawMode (drawMode DrawMode) {
+	terrain.DrawMode = drawMode
+}
+
+func (terrain *Terrain) GetName () string {
+	return terrain.Name
+}
+
+func (terrain *Terrain) String () string {
+	return fmt.Sprintf(`
+               Terrain --> %s
+    -------------------------------------
+    %s
+    -------------------------------------
+    `, terrain.Name, terrain.Model)
 }
 

@@ -1,27 +1,37 @@
 package models
 
 import (
+	"log"
+	"fmt"
+
 	"github.com/go-gl/gl/all-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 
 	"github.com/yagocarballo/Go-GL-Assignment-2/loader"
-	"log"
-	"fmt"
+	"github.com/yagocarballo/Go-GL-Assignment-2/wrapper"
 )
 
 type WavefrontObject struct {
+	Name						string
+
 	VertexCoordinates 			uint32
 	VertexNormals 				uint32
 
 	Objects						[]*loader.ObjectData
+
+	DrawMode					DrawMode
 }
 
 func NewObjectLoader () *WavefrontObject {
 	return &WavefrontObject{
+		"Obj", // Name
+
 		0, // VertexCoordinates
 		1, // VertexNormals
 
 		[]*loader.ObjectData{}, // Objects
+
+		DRAW_POLYGONS, // Draw Mode
 	}
 }
 
@@ -44,8 +54,10 @@ func (objectLoader *WavefrontObject) CreateObject () {
 		// Sets the Model in the Initial position
 		object.Model = mgl32.Ident4()
 
-		// Print the object
-		fmt.Println(object)
+		if wrapper.DEBUG {
+			// Print the object
+			fmt.Println(object)
+		}
 
 		// Generate the vertex buffer object
 		gl.GenBuffers(1, &object.VertexBufferObjectVertices)
@@ -162,6 +174,15 @@ func (objectLoader *WavefrontObject) DrawObject(shaderProgram uint32) {
 		size = int32(len(object.Vertex))
 
 		gl.PointSize(3.0)
+
+		// Enable this line to show model in wireframe
+		switch objectLoader.DrawMode {
+		case 1:
+			gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
+		default:
+			gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
+		}
+
 		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, object.VertexBufferObjectFaces);
 		gl.GetBufferParameteriv(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE, &size);
 		gl.DrawElements(gl.TRIANGLES, int32(len(object.Faces)), gl.UNSIGNED_SHORT, nil)
@@ -172,44 +193,61 @@ func (objectLoader *WavefrontObject) DrawObject(shaderProgram uint32) {
 
 // Individual Objects
 
-func (objectLoader *WavefrontObject) ResetModel(index int) {
+func (objectLoader *WavefrontObject) ResetChildModel(index int) {
 	objectLoader.Objects[index].Model = mgl32.Ident4()
 }
 
-func (objectLoader *WavefrontObject) Translate(index int, Tx, Ty, Tz float32) {
+func (objectLoader *WavefrontObject) TranslateChild(index int, Tx, Ty, Tz float32) {
 	objectLoader.Objects[index].Model = objectLoader.Objects[index].Model.Mul4(mgl32.Translate3D(Tx, Ty, Tz))
 }
 
-func (objectLoader *WavefrontObject) Scale(index int, scaleX, scaleY, scaleZ float32) {
+func (objectLoader *WavefrontObject) ScaleChild(index int, scaleX, scaleY, scaleZ float32) {
 	objectLoader.Objects[index].Model = objectLoader.Objects[index].Model.Mul4(mgl32.Scale3D(scaleX, scaleY, scaleZ))
 }
 
-func (objectLoader *WavefrontObject) Rotate(index int, angle float32, axis mgl32.Vec3) {
+func (objectLoader *WavefrontObject) RotateChild(index int, angle float32, axis mgl32.Vec3) {
 	objectLoader.Objects[index].Model = objectLoader.Objects[index].Model.Mul4(mgl32.HomogRotate3D(angle, axis))
 }
 
 // All Objects
 
-func (objectLoader *WavefrontObject) ResetAllModels() {
+func (objectLoader *WavefrontObject) ResetModel() {
 	for index, _ := range objectLoader.Objects {
 		objectLoader.Objects[index].Model = mgl32.Ident4()
 	}
 }
 
-func (objectLoader *WavefrontObject) TranslateAll(Tx, Ty, Tz float32) {
+func (objectLoader *WavefrontObject) Translate(Tx, Ty, Tz float32) {
 	for index, _ := range objectLoader.Objects {
 		objectLoader.Objects[index].Model = objectLoader.Objects[index].Model.Mul4(mgl32.Translate3D(Tx, Ty, Tz))
 	}
 }
 
-func (objectLoader *WavefrontObject) ScaleAll(scaleX, scaleY, scaleZ float32) {
+func (objectLoader *WavefrontObject) Scale(scaleX, scaleY, scaleZ float32) {
 	for index, _ := range objectLoader.Objects {
 		objectLoader.Objects[index].Model = objectLoader.Objects[index].Model.Mul4(mgl32.Scale3D(scaleX, scaleY, scaleZ))
 	}
 }
 
-func (objectLoader *WavefrontObject) RotateAll(angle float32, axis mgl32.Vec3) {
+func (objectLoader *WavefrontObject) Rotate(angle float32, axis mgl32.Vec3) {
 	for index, _ := range objectLoader.Objects {
 		objectLoader.Objects[index].Model = objectLoader.Objects[index].Model.Mul4(mgl32.HomogRotate3D(angle, axis))
 	}
 }
+
+func (objectLoader *WavefrontObject) GetDrawMode () DrawMode {
+	return objectLoader.DrawMode
+}
+
+func (objectLoader *WavefrontObject) SetDrawMode (drawMode DrawMode) {
+	objectLoader.DrawMode = drawMode
+}
+
+func (objectLoader *WavefrontObject) GetName () string {
+	return objectLoader.Name
+}
+
+func (objectLoader *WavefrontObject) String () string {
+	return fmt.Sprintf(``)
+}
+
