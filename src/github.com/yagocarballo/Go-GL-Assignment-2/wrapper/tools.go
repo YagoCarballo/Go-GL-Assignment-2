@@ -243,6 +243,10 @@ func (shaderManager *ShaderManager) LoadShader (name string, vertexShaderSource,
     return nil
 }
 
+func (shaderManager *ShaderManager) CurrentShader () uint32 {
+	return shaderManager.Shaders[shaderManager.ActiveShader].Shader
+}
+
 func (shaderManager *ShaderManager) CreateUniform (shaderName, uniformName string) {
     shaderManager.Shaders[shaderName].Uniforms[uniformName] = gl.GetUniformLocation(shaderManager.Shaders[shaderName].Shader, gl.Str(uniformName + "\x00"));
 }

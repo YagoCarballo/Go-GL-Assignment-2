@@ -41,6 +41,8 @@ var selected_model models.Model
 var view					*models.Camera
 var lightPoint				*models.Sphere
 
+var terrain 				*models.Terrain
+
 // Index of a uniform to switch the colour mode in the vertex shader
 var colorMode models.ColorMode
 
@@ -95,29 +97,28 @@ func main() {
 // Loads the Shaders into the Shader Manager
 //
 func InitShaders () {
+	shaderList := []string{
+		"basic",
+		"shiny",
+		"fragment_light",
+		"terrain",
+	}
+
 	// Creates the Shader Program
 	shaderManager = wrapper.NewShaderManager()
-	var err error; err = shaderManager.LoadShader("default", "./resources/shaders/basic.vert", "./resources/shaders/basic.frag")
 
-	// If there is any error loading the shaders, it panics
-	if err != nil {
-		panic(err)
-	}
+	// Loads In the list of shaders
+	for _, shaderName := range shaderList {
+		var err error; err = shaderManager.LoadShader(
+			shaderName,
+			fmt.Sprintf("./resources/shaders/%s.vert", shaderName),
+			fmt.Sprintf("./resources/shaders/%s.frag", shaderName),
+		)
 
-	// Creates the Shader Program
-	err = shaderManager.LoadShader("shiny", "./resources/shaders/shiny.vert", "./resources/shaders/shiny.frag")
-
-	// If there is any error loading the shaders, it panics
-	if err != nil {
-		panic(err)
-	}
-
-
-	err = shaderManager.LoadShader("fragment_light", "./resources/shaders/fragment_light.vert", "./resources/shaders/fragment_light.frag")
-
-	// If there is any error loading the shaders, it panics
-	if err != nil {
-		panic(err)
+		// If there is any error loading the shaders, it panics
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	// Define uniforms to send to the shaders
@@ -167,6 +168,10 @@ func InitApp(glw *wrapper.Glw) {
 	)
     lightPoint.MakeSphereVBO() // Creates the Light Point Buffer Object
 
+	// Creates the Terrain
+	terrain = models.NewTerrain()
+	terrain.CreateTerrain(200, 200, 150.0, 150.0)
+
 	// Applies Initial Transforms to the Models
 	InitialModelTransforms()
 
@@ -184,13 +189,19 @@ func InitApp(glw *wrapper.Glw) {
 func InitialModelTransforms () {
 	// Define the model transformations for the LightPoint
 	lightPoint.ResetModel()
-	lightPoint.Translate(0.0, 0.0, 1.0)
+	lightPoint.Translate(0.0, -1.0, 1.0)
 	lightPoint.Scale(0.05, 0.05, 0.05)
 
 	// Apply rotations to the view position
 	view.Rotate(0, mgl32.Vec3{1, 0, 0}) //rotating in clockwise direction around x-axis
 	view.Rotate(0, mgl32.Vec3{0, 1, 0}) //rotating in clockwise direction around y-axis
 	view.Rotate(0, mgl32.Vec3{0, 0, 1})
+
+	// Apply the initial terrain Position
+	terrain.ResetModel()
+	terrain.Translate(0.0, 0.0, -20.0)
+	terrain.Scale(0.5, 0.5, 0.5)
+	terrain.Rotate(210, mgl32.Vec3{1, 0, 0})
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -231,13 +242,15 @@ func drawLoop(glw *wrapper.Glw, delta float64) {
 		shaderManager.SetUniformMatrix4fv(name, "view", 1, false, &view.Model[0])
 		shaderManager.SetUniformMatrix4fv(name, "projection", 1, false, &Projection[0])
 		shaderManager.SetUniform4f(name, "lightpos", lightpos.X(), lightpos.Y(), lightpos.Z(), lightpos.W())
+		shaderManager.SetUniformMatrix4fv(name, "lightObject", 1, false, &lightPoint.Model[0])
 	}
 
 	// Sets the Shader program to Use
-	shaderManager.EnableShader("shiny")
-	shaderManager.EnableShader("default")
-	shaderManager.EnableShader("shiny")
-	shaderManager.EnableShader("default")
+	shaderManager.EnableShader("terrain")
+
+	terrain.DrawObject(shaderManager.CurrentShader(), 0)
+
+	shaderManager.EnableShader("basic")
 
     // Draw our light Position sphere
     emitMode = models.EMIT_BRIGHT
@@ -540,140 +553,4 @@ Select A Model with a number
 
 
 	`)
-}
-
-// Define vertices for a cube in 12 triangles
-var vertexPositions = []float32{
-	-0.25, 0.25, -0.25,
-	-0.25, -0.25, -0.25,
-	0.25, -0.25, -0.25,
-
-	0.25, -0.25, -0.25,
-	0.25, 0.25, -0.25,
-	-0.25, 0.25, -0.25,
-
-	0.25, -0.25, -0.25,
-	0.25, -0.25, 0.25,
-	0.25, 0.25, -0.25,
-
-	0.25, -0.25, 0.25,
-	0.25, 0.25, 0.25,
-	0.25, 0.25, -0.25,
-
-	0.25, -0.25, 0.25,
-	-0.25, -0.25, 0.25,
-	0.25, 0.25, 0.25,
-
-	-0.25, -0.25, 0.25,
-	-0.25, 0.25, 0.25,
-	0.25, 0.25, 0.25,
-
-	-0.25, -0.25, 0.25,
-	-0.25, -0.25, -0.25,
-	-0.25, 0.25, 0.25,
-
-	-0.25, -0.25, -0.25,
-	-0.25, 0.25, -0.25,
-	-0.25, 0.25, 0.25,
-
-	-0.25, -0.25, 0.25,
-	0.25, -0.25, 0.25,
-	0.25, -0.25, -0.25,
-
-	0.25, -0.25, -0.25,
-	-0.25, -0.25, -0.25,
-	-0.25, -0.25, 0.25,
-
-	-0.25, 0.25, -0.25,
-	0.25, 0.25, -0.25,
-	0.25, 0.25, 0.25,
-
-	0.25, 0.25, 0.25,
-	-0.25, 0.25, 0.25,
-	-0.25, 0.25, -0.25,
-}
-
-// Define an array of colours
-var vertexColours = []float32{
-	0.0, 0.0, 1.0, 1.0,
-	0.0, 0.0, 1.0, 1.0,
-	0.0, 0.0, 1.0, 1.0,
-	0.0, 0.0, 1.0, 1.0,
-	0.0, 0.0, 1.0, 1.0,
-	0.0, 0.0, 1.0, 1.0,
-
-	0.0, 1.0, 0.0, 1.0,
-	0.0, 1.0, 0.0, 1.0,
-	0.0, 1.0, 0.0, 1.0,
-	0.0, 1.0, 0.0, 1.0,
-	0.0, 1.0, 0.0, 1.0,
-	0.0, 1.0, 0.0, 1.0,
-
-	1.0, 1.0, 0.0, 1.0,
-	1.0, 1.0, 0.0, 1.0,
-	1.0, 1.0, 0.0, 1.0,
-	1.0, 1.0, 0.0, 1.0,
-	1.0, 1.0, 0.0, 1.0,
-	1.0, 1.0, 0.0, 1.0,
-
-	1.0, 0.0, 0.0, 1.0,
-	1.0, 0.0, 0.0, 1.0,
-	1.0, 0.0, 0.0, 1.0,
-	1.0, 0.0, 0.0, 1.0,
-	1.0, 0.0, 0.0, 1.0,
-	1.0, 0.0, 0.0, 1.0,
-
-	1.0, 0.0, 1.0, 1.0,
-	1.0, 0.0, 1.0, 1.0,
-	1.0, 0.0, 1.0, 1.0,
-	1.0, 0.0, 1.0, 1.0,
-	1.0, 0.0, 1.0, 1.0,
-	1.0, 0.0, 1.0, 1.0,
-
-	0.0, 1.0, 1.0, 1.0,
-	0.0, 1.0, 1.0, 1.0,
-	0.0, 1.0, 1.0, 1.0,
-	0.0, 1.0, 1.0, 1.0,
-	0.0, 1.0, 1.0, 1.0,
-	0.0, 1.0, 1.0, 1.0,
-}
-
-/* Manually specified normals for our cube */
-var normals = []float32{
-	0, 0, -1,
-	0, 0, -1,
-	0, 0, -1,
-	0, 0, -1,
-	0, 0, -1,
-	0, 0, -1,
-	1, 0, 0,
-	1, 0, 0,
-	1, 0, 0,
-	1, 0, 0,
-	1, 0, 0,
-	1, 0, 0,
-	0, 0, 1,
-	0, 0, 1,
-	0, 0, 1,
-	0, 0, 1,
-	0, 0, 1,
-	0, 0, 1,
-	-1, 0, 0,
-	-1, 0, 0,
-	-1, 0, 0,
-	-1, 0, 0,
-	-1, 0, 0,
-	-1, 0, 0,
-	0, -1, 0,
-	0, -1, 0,
-	0, -1, 0,
-	0, -1, 0,
-	0, -1, 0,
-	0, -1, 0,
-	0, 1, 0,
-	0, 1, 0,
-	0, 1, 0,
-	0, 1, 0,
-	0, 1, 0,
-	0, 1, 0,
 }
