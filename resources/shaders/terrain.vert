@@ -11,70 +11,39 @@ layout(location = 2) in vec3 normal;
 uniform mat4 model, view, projection;
 uniform uint colourmode;
 uniform vec4 lightpos;
+uniform vec4 tone;
 
-// Output the vertex colour - to be rasterized into pixel fragments
-out vec4 fcolour;
-vec4 ambient = vec4(0.2, 0.2,0.2,1.0);
-vec3 light_dir = vec3(0.0, 0.0, 10.0);
-vec4 earth_tone = vec4(0.4980392157, 0.3411764706, 0.05098039216, 1.0);
+// Outputs
+out vec4 lightPosition;
+out vec3 lightNormal, lightDirection;
+out vec4 colorDiffuse;
 
-void main()
-{
-    if ((lightpos.x + lightpos.y + lightpos.z) != 0) {
-        light_dir = lightpos.xyz;
-    }
+// Color Constants
+const vec4 toneModifier = vec4(0.662, 0.405, 0.022, 1);
 
-	vec4 specular_colour = vec4(0.0,0.0,0.0,1.0);
-	vec4 diffuse_colour = vec4(0.5,0.5,0,1.0);
-	vec4 position_h = vec4(position, 1.0);
-	float shininess = 8.0;
+void main() {
+    vec3 lightPosV3 = lightpos.xyz;
 
-	if (colourmode == uint(0))
-	{
-		diffuse_colour = vec4(0.8,0.6,0.2,1.0);
-	}
-	else
-	{
-		if (position.y <= 0)
-		{
-			diffuse_colour = vec4(0.2, 0.2, 1.0, 1.0);
-		}
-		else if (position.y < 1.0)
-		{
-			diffuse_colour = vec4(0.0, 0.6, 0.2, 1.0);
-		}
-		else if (position.y < 2.0)
-		{
-			diffuse_colour = vec4(0.6, 0.4, 0.2, 1.0);
-		}
-		else
-		{
-			diffuse_colour = vec4(0.9, 0.8, 0.9, 1.0);
-		}
+    // Convert the (x,y,z) position to homogeneous coords (x,y,z,w)
+	vec4 positionHomogeneus = vec4(position, 1.0);
 
-		// Define the colour based on the height of the vertex
-		diffuse_colour = vec4(0.5, 0.3, 0.2, 1.0);
-		diffuse_colour = colour + earth_tone;
+    // Update the Diffuse Color
+	if (colourmode == uint(0)) {
+		colorDiffuse = vec4(0.8, 0.6, 0.2, 1.0);
+	} else {
+		colorDiffuse = colour + tone;
 	}
 
-	ambient = diffuse_colour * 0.2;
+    // Calculates the Transformations
+	mat4 matrixModelView = view * model;
+	mat3 matrixNormal = transpose(inverse(mat3(matrixModelView)));
 
-	mat4 mv_matrix = view * model;
-	mat3 normalmatrix = mat3(mv_matrix);
-	vec3 N = mat3(mv_matrix) * normal;
-	N = normalize(N);
-	light_dir = normalize(light_dir);
-
-	vec3 diffuse = max(dot(N, light_dir), 0.0) * diffuse_colour.xyz;
-
-	vec4 P = position_h * mv_matrix;
-	vec3 half_vec = normalize(light_dir + P.xyz);
-	vec4 specular = pow(max(dot(N, half_vec), 0.0), shininess) * specular_colour;
-
-	// Define the vertex colour
-	fcolour = vec4(diffuse, 1.0) + ambient + specular;
+    // Calculates the Lights
+	lightPosition = matrixModelView * positionHomogeneus;
+	lightNormal = normalize(matrixNormal * normal);
+	lightDirection = lightPosV3 - lightPosition.xyz;
 
 	// Define the vertex position
-	gl_Position = projection * view * model * position_h;
+	gl_Position = (projection * view * model) * positionHomogeneus;
 }
 

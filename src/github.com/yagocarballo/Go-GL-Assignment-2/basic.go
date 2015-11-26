@@ -42,6 +42,7 @@ var view					*models.Camera
 var lightPoint				*models.Sphere
 
 var terrain 				*models.Terrain
+var water 					*models.Terrain
 var gopher 					*models.WavefrontObject
 var gingerbreadHouse        *models.WavefrontObject
 var dragon       		 	*models.WavefrontObject
@@ -130,11 +131,13 @@ func InitShaders () {
 	// Define uniforms to send to the shaders
 	for name, _ := range shaderManager.Shaders {
 		shaderManager.CreateUniform(name, "model")
-		shaderManager.CreateUniform(name, "colourmode")
-		shaderManager.CreateUniform(name, "emitmode")
 		shaderManager.CreateUniform(name, "view")
 		shaderManager.CreateUniform(name, "projection")
 		shaderManager.CreateUniform(name, "lightpos")
+
+		shaderManager.CreateUniform(name, "colourmode")
+		shaderManager.CreateUniform(name, "emitmode")
+		shaderManager.CreateUniform(name, "tone")
 	}
 }
 
@@ -175,8 +178,25 @@ func InitApp(glw *wrapper.Glw) {
     lightPoint.MakeSphereVBO() // Creates the Light Point Buffer Object
 
 	// Creates the Terrain
-	terrain = models.NewTerrain()
-	terrain.CreateTerrain(200, 200, 150.0, 150.0)
+	terrain = models.NewTerrainWithSeed(
+//		time.Now().UnixNano(),
+		999999,
+		4.0,
+		5.0,
+		mgl32.Vec4{ 0.662, 0.405, 0.022, 1 },
+	)
+//	terrain.CreateTerrain(200, 200, 150.0, 150.0)
+	terrain.CreateTerrain(200, 200, 350.0, 350.0)
+//	terrain.CreateTerrain(300, 300, 150.0, 150.0)
+
+	// Creates the Water
+	water = models.NewTerrainWithSeed(
+		incSeed,
+		4.0,
+		50.0,
+		mgl32.Vec4{ 0, 0.618, 1, 0.9 },
+	)
+	water.CreateTerrain(250, 250, 350.0, 350.0)
 
 	// Creates the Gopher
 	gopher = models.NewObjectLoader()
@@ -224,6 +244,12 @@ func InitialModelTransforms () {
 	terrain.Scale(0.5, 0.5, 0.5)
 	terrain.Rotate(210, mgl32.Vec3{1, 0, 0})
 
+	// Apply the initial terrain Position
+	water.ResetModel()
+	water.Translate(0.0, 0.0, -20.0)
+	water.Scale(0.5, 0.5, 0.5)
+	water.Rotate(210, mgl32.Vec3{1, 0, 0})
+
 	// Apply the initial Gopher Position
 	gopher.ResetModel()
 	gopher.Scale(0.3, 0.3, 0.3)
@@ -251,7 +277,7 @@ func InitialModelTransforms () {
 //
 func drawLoop(glw *wrapper.Glw, delta float64) {
 	// Sets the Clear Color (Background Color)
-	gl.ClearColor(0.0, 0.8274509804, 0.9490196078, 1.0)
+	gl.ClearColor(0.048, 0.356, 0.648, 1)
 
 	// Clears the Window
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
@@ -282,17 +308,38 @@ func drawLoop(glw *wrapper.Glw, delta float64) {
 	}
 
 	// Sets the Shader program to Use
+	for name, _ := range shaderManager.Shaders {
+		// Sets the Shader program to Use
+		shaderManager.EnableShader(name)
+		shaderManager.SetUniform4f(name, "tone", terrain.ColorTone.X(), terrain.ColorTone.Y(), terrain.ColorTone.Z(), terrain.ColorTone.W())
+	}
 	shaderManager.EnableShader("terrain")
-	terrain.DrawObject(shaderManager.CurrentShader())
+	terrain.DrawObject(shaderManager.Shaders["terrain"].Shader)
 
-	shaderManager.EnableShader("colorMaterial")
-	gopher.DrawObject(shaderManager.CurrentShader())
+	// Sets the Shader program to Use
+	for name, _ := range shaderManager.Shaders {
+		// Sets the Shader program to Use
+		shaderManager.EnableShader(name)
+		shaderManager.SetUniform4f(name, "tone", water.ColorTone.X(), water.ColorTone.Y(), water.ColorTone.Z(), water.ColorTone.W())
+	}
 
+	//	shaderManager.EnableShader("colorMaterial")
+//	gopher.DrawObject(shaderManager.CurrentShader())
+//
 	shaderManager.EnableShader("bumpMapMaterial")
 	gingerbreadHouse.DrawObject(shaderManager.CurrentShader())
+//
+//	shaderManager.EnableShader("textureMaterial")
+//	dragon.DrawObject(shaderManager.CurrentShader())
 
-	shaderManager.EnableShader("textureMaterial")
-	dragon.DrawObject(shaderManager.CurrentShader())
+	shaderManager.EnableShader("terrain")
+	gl.Enable(gl.BLEND)
+//	gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+	gl.BlendFunc(gl.SRC_COLOR, gl.ONE)
+//	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+	water.DrawObject(shaderManager.CurrentShader())
+	gl.Disable(gl.BLEND)
+
 
     // Draw our light Position sphere
     emitMode = models.EMIT_BRIGHT
@@ -306,6 +353,8 @@ func drawLoop(glw *wrapper.Glw, delta float64) {
     emitMode = models.EMIT_COLORED
 }
 
+var incSeed int64
+
 //
 // applyAnimations
 // Applies animations (called once every loop)
@@ -313,7 +362,20 @@ func drawLoop(glw *wrapper.Glw, delta float64) {
 // @param delta (float64) delta time of the update
 //
 func applyAnimations (delta float64) {
-
+	animationProgress += float32(delta) * float32(1000)
+	if animationProgress > 30 {
+		model := water.Model
+		water = models.NewTerrainWithSeed(
+			incSeed,
+			4.0,
+			50.0,
+			mgl32.Vec4{ 0, 0.618, 1, 0.9 },
+		)
+		water.CreateTerrain(250, 250, 350.0, 350.0)
+		water.Model = model
+		animationProgress = 0.0
+		incSeed++
+	}
 }
 
 //
@@ -327,7 +389,7 @@ func applyAnimations (delta float64) {
 // @param mods (glfw.ModifierKey) the pressed modified keys.
 //
 func keyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-	var keySpeed float32 = 0.05
+	var keySpeed float32 = 0.5
 	var position mgl32.Vec4 = mgl32.Vec4{0, 0, 0, 0}
 	var rotation mgl32.Vec4 = mgl32.Vec4{0, 0, 0, 0}
 	var zoom float32 = 0.0
@@ -487,7 +549,15 @@ func keyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Ac
 			}
 		}
 	case glfw.KeySpace:
-		fmt.Println(selected_model)
+		model := water.Model
+		water = models.NewTerrainWithSeed(
+			incSeed,
+			4.0,
+			50.0,
+			mgl32.Vec4{ 0, 0.618, 1, 0.9 },
+		)
+		water.CreateTerrain(250, 250, 350.0, 350.0)
+		water.Model = model
 	}
 }
 

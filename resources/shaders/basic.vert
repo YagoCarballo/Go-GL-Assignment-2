@@ -60,7 +60,7 @@ void main()
     float attenuation = 1.0 / (1.0 + attenuation_k * pow(distanceToLight, 2));
 
 	// If emitmode is 1 then we enable emmissive lighting
-	if (emitmode == uint(1)) emissive = vec3(1.0, 1.0, 0.8);
+	if (emitmode == uint(1)) emissive = vec3(0.994, 0.803, 0.019);
 
 	// Calculate the output colour, includung attenuation on the diffuse and specular components
 	// Note that you may want to exclude the ambient form the attenuation factor so objects

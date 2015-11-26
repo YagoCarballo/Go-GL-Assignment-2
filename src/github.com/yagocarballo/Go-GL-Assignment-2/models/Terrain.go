@@ -18,33 +18,51 @@ const (
 )
 
 type Terrain struct  {
-	XSize, ZSize		uint32
-	PerlinOctaves		uint32
-	HeightScale			float32
+	Seed                  int64
+	Frequency, NoiseScale float32
+	ColorTone			  mgl32.Vec4
 
-	VBOVertices			uint32
-	VBOColors			uint32
-	VBONormals			uint32
-	VBOIndices			uint32
+	XSize, ZSize          uint32
+	PerlinOctaves         uint32
+	HeightScale           float32
 
-	Vertices			[]mgl32.Vec3
-	Normals				[]mgl32.Vec3
-	Colors				[]mgl32.Vec3
-	Indices				[]uint16
+	VBOVertices           uint32
+	VBOColors             uint32
+	VBONormals            uint32
+	VBOIndices            uint32
 
-	Noise				[]float32
+	Vertices              []mgl32.Vec3
+	Normals               []mgl32.Vec3
+	Colors                []mgl32.Vec3
+	Indices               []uint16
 
-	Model				mgl32.Mat4
+	Noise                 []float32
 
-	Name				string
-	DrawMode            DrawMode // Defines drawing mode of cube as points, lines or filled polygons
+	Model                 mgl32.Mat4
+
+	Name                  string
+	DrawMode              DrawMode // Defines drawing mode of cube as points, lines or filled polygons
+}
+
+func NewTerrain () *Terrain {
+	return NewTerrainWithSeed(
+		0, 		// Seed
+		4.0, 	// Frequency
+		5.0,	// NoiseScale
+		mgl32.Vec4{ 0.662, 0.405, 0.022, 1 }, // Color Tone
+	)
 }
 
 //	Define the vertex attributes for vertex positions and normals.
 //	Make these match your application and vertex shader
 //	You might also want to add colours and texture coordinates
-func NewTerrain () *Terrain {
+func NewTerrainWithSeed(seed int64, frequency, scale float32, colorTone mgl32.Vec4) *Terrain {
 	return &Terrain{
+		seed,			// Seed
+		frequency,		// Frequency
+		scale,			// NoiseScale
+		colorTone,		// Color Tone
+
 		0,				// XSize: Set to zero because we haven't created the heightField array yet
 		0,				// ZSize
 		4,				// PerlinOctaves
@@ -94,7 +112,7 @@ func (terrain *Terrain) CreateObject() {
 	// Generate a buffer for the indices
 	gl.GenBuffers(1, &terrain.VBOIndices)
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, terrain.VBOIndices)
-	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, int(len(terrain.Indices) * 2), gl.Ptr(terrain.Indices), gl.STATIC_DRAW)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, int(len(terrain.Indices) * SizeOfUint16), gl.Ptr(terrain.Indices), gl.STATIC_DRAW)
 	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
 }
 
@@ -104,18 +122,23 @@ create object but this method is more general
 This code is almost untouched fomr the tutorial code except that I changed the
 number of elements per vertex from 4 to 3*/
 func (terrain *Terrain) DrawObject(shaderProgram uint32) {
+	toneUniform := gl.GetAttribLocation(shaderProgram, gl.Str("tone\x00"))
+	gl.Uniform4f(toneUniform, terrain.ColorTone.X(), terrain.ColorTone.Y(), terrain.ColorTone.Z(), terrain.ColorTone.W())
+//	gl.Uniform4f(toneUniform, 0.0, 1.0, 0.5, 1.0)
+//	gl.Uniform4fv(toneUniform, 1, &terrain.ColorTone[0])
+
+
 	// Reads the uniform Locations
 	modelUniform := gl.GetUniformLocation(shaderProgram, gl.Str("model\x00"));
 
 	// Send our uniforms variables to the currently bound shader
 	gl.UniformMatrix4fv(modelUniform, 1, false, &terrain.Model[0]);
 
-	var size int32	// Used to get the byte size of the element (vertex index) array
-
 	// Get the vertices uniform position
 	verticesUniform := uint32(gl.GetAttribLocation(shaderProgram, gl.Str("position\x00")))
 	normalsUniform := uint32(gl.GetAttribLocation(shaderProgram, gl.Str("normal\x00")))
 	colorsUniform := uint32(gl.GetAttribLocation(shaderProgram, gl.Str("colour\x00")))
+
 
 	// Describe our vertices array to OpenGL (it can't guess its format automatically)
 	gl.EnableVertexAttribArray(verticesUniform)
@@ -151,7 +174,7 @@ func (terrain *Terrain) DrawObject(shaderProgram uint32) {
 		nil,                // offset of first element
 	)
 
-	size = int32(len(terrain.Vertices))
+	size := int32(len(terrain.Indices))
 
 	gl.PointSize(3.0)
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, terrain.VBOIndices);
@@ -169,11 +192,19 @@ func (terrain *Terrain) DrawObject(shaderProgram uint32) {
 		gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
 	}
 
+	var location int = 0
 	/* Draw the triangle strips */
 	for i := uint32(0); i < terrain.XSize - 1; i++ {
-		var location int = SizeOfUint16 * int(i * terrain.ZSize * 2)
+		location = SizeOfUint16 * int(i * terrain.ZSize * 2)
 		gl.DrawElements(gl.TRIANGLE_STRIP, int32(terrain.ZSize * 2), gl.UNSIGNED_SHORT, gl.PtrOffset(location))
 	}
+
+//	gl.DrawElements(
+//		gl.TRIANGLE_STRIP,
+//		len(terrain.Indices),
+//		gl.UNSIGNED_SHORT,
+//		nil,
+//	)
 }
 
 
@@ -190,6 +221,8 @@ func (terrain *Terrain) CalculateNoise(freq, scale float32) {
 	xFactor := 1. / float32(terrain.XSize - 1)
 	zFactor := 1. / float32(terrain.ZSize - 1)
 
+	noiseGenerator := opensimplex.NewWithSeed(terrain.Seed)
+
 	for row := uint32(0); row < terrain.ZSize; row++ {
 		for col := uint32(0); col < terrain.XSize; col++ {
 			x := xFactor * float32(col)
@@ -200,8 +233,9 @@ func (terrain *Terrain) CalculateNoise(freq, scale float32) {
 
 			// Compute the sum for each octave
 			for oct := uint32(0); oct < 4; oct++ {
-				noiseGenerator := opensimplex.New()
 				p := noiseGenerator.Eval2(float64(x) * float64(current_freq), float64(z) * float64(current_freq))
+//				p := noiseGenerator.Eval3(float64(x) * float64(current_freq), float64(z) * float64(current_freq), float64(oct) * float64(current_freq))
+//				p := noiseGenerator.Eval4(float64(x) * float64(current_freq), float64(z) * float64(current_freq), float64(oct) * float64(current_freq), float64(current_freq))
 				val := float32(p) / current_scale
 				sum += val;
 				result := (sum + 1.0) / 2.0
@@ -236,7 +270,7 @@ func (terrain *Terrain) CreateTerrain(xp, zp uint32, xs, zs float32) {
 	terrain.HeightScale = xs;
 
 	/* First calculate the noise array which we'll use for our vertex height values */
-	terrain.CalculateNoise(4.0, 5.0)
+	terrain.CalculateNoise(terrain.Frequency, terrain.NoiseScale)
 
 //	if wrapper.DEBUG {
 //		// Debug code to check that noise values are sensible
