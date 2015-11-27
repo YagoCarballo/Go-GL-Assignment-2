@@ -40,7 +40,7 @@ void main() {
 
     // Calculates the Lights
 	lightPosition = matrixModelView * positionHomogeneus;
-	lightNormal = normalize(matrixNormal * normal);
+	lightNormal = normalize(matrixNormal * -normal);
 	lightDirection = lightPosV3 - lightPosition.xyz;
 
 	// Define the vertex position

@@ -10,6 +10,9 @@ import (
 	"github.com/go-gl/glfw/v3.1/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 	"log"
+	"math/rand"
+	"time"
+	"math"
 )
 
 const windowWidth = 1024
@@ -27,6 +30,7 @@ var speed float64 = 10
 
 // Animation progress
 var animationProgress float32 = 0
+var fishAnimationProgress []float32 = []float32{}
 
 // Aspect ratio of the window defined in the reshape callback
 var aspect_ratio float32
@@ -46,6 +50,7 @@ var water 					*models.Terrain
 var gopher 					*models.WavefrontObject
 var gingerbreadHouse        *models.WavefrontObject
 var dragon       		 	*models.WavefrontObject
+var seaCreatures       		[]*models.WavefrontObject
 
 // Index of a uniform to switch the colour mode in the vertex shader
 var colorMode models.ColorMode
@@ -163,7 +168,7 @@ func InitApp(glw *wrapper.Glw) {
 
 	// Create the Camera / View
 	view = models.NewCamera("View", mgl32.LookAtV(
-		mgl32.Vec3{0, 0, 2.5},	// Camera is at (0,0,4), in World Space
+		mgl32.Vec3{0, -20, 6},	// Camera is at (0,0,4), in World Space
 		mgl32.Vec3{0, 0, 0},	// and looks at the origin
 		mgl32.Vec3{0, 1, 0},	// Head is up (set to 0,-1,0 to look upside-down)
 	))
@@ -213,6 +218,22 @@ func InitApp(glw *wrapper.Glw) {
 	dragon.LoadObject("./resources/models/dragon/dragon.obj")
 	dragon.CreateObject()
 
+	// Creates Sea Creatures
+	seed := rand.NewSource(time.Now().UnixNano())
+	random := rand.New(seed)
+	for i:=0; i<30; i++ {
+		creature := models.NewObjectLoader()
+		if (i % 2) == 0 {
+			creature.LoadObject("./resources/models/clownFish/clownFish.obj")
+		} else {
+			creature.LoadObject("./resources/models/fish/fish.obj")
+		}
+
+		creature.CreateObject()
+		seaCreatures = append(seaCreatures, creature)
+		fishAnimationProgress = append(fishAnimationProgress, (random.Float32() * 10.0))
+	}
+
 	// Applies Initial Transforms to the Models
 	InitialModelTransforms()
 
@@ -230,25 +251,26 @@ func InitApp(glw *wrapper.Glw) {
 func InitialModelTransforms () {
 	// Define the model transformations for the LightPoint
 	lightPoint.ResetModel()
-	lightPoint.Translate(0.0, -1.0, 1.0)
-	lightPoint.Scale(0.05, 0.05, 0.05)
+	lightPoint.Translate(-10.0, -15.0, -20.0)
+	lightPoint.Scale(1, 1, 1)
 
 	// Apply rotations to the view position
-	view.Rotate(0, mgl32.Vec3{1, 0, 0}) //rotating in clockwise direction around x-axis
+	view.Rotate(0.7, mgl32.Vec3{1, 0, 0}) //rotating in clockwise direction around x-axis
 	view.Rotate(0, mgl32.Vec3{0, 1, 0}) //rotating in clockwise direction around y-axis
 	view.Rotate(0, mgl32.Vec3{0, 0, 1})
+	view.Scale(0.7, 0.7, 0.7)
 
 	// Apply the initial terrain Position
 	terrain.ResetModel()
-	terrain.Translate(0.0, 0.0, -20.0)
+	terrain.Translate(0.0, 10.0, -20.0)
 	terrain.Scale(0.5, 0.5, 0.5)
-	terrain.Rotate(210, mgl32.Vec3{1, 0, 0})
+	terrain.Rotate(180, mgl32.Vec3{0, 1, 0})
 
 	// Apply the initial terrain Position
 	water.ResetModel()
-	water.Translate(0.0, 0.0, -20.0)
+	water.Translate(0.0, 10.0, -20.0)
 	water.Scale(0.5, 0.5, 0.5)
-	water.Rotate(210, mgl32.Vec3{1, 0, 0})
+	water.Rotate(180, mgl32.Vec3{0, 1, 0})
 
 	// Apply the initial Gopher Position
 	gopher.ResetModel()
@@ -258,10 +280,19 @@ func InitialModelTransforms () {
 
 	// Moves the House
 	gingerbreadHouse.ResetModel()
-	gingerbreadHouse.Translate(1.5, 1.0, 0.0)
-	gingerbreadHouse.Scale(0.3, 0.3, 0.3)
-	gingerbreadHouse.Rotate(210, mgl32.Vec3{1, 0, 0})
-	gingerbreadHouse.Rotate(70, mgl32.Vec3{0, 1, 0})
+	gingerbreadHouse.Translate(1.5, 6.0, 0.0)
+	gingerbreadHouse.Scale(1.0, 1.0, 1.0)
+	gingerbreadHouse.Rotate(3.5, mgl32.Vec3{1, 0, 0})
+	gingerbreadHouse.Rotate(-0.15, mgl32.Vec3{0, 0, 1})
+
+	seed := rand.NewSource(time.Now().UnixNano())
+	random := rand.New(seed)
+	for _, creature := range seaCreatures {
+		creature.ResetModel()
+		creature.Translate((random.Float32() * 50.0), 12, (random.Float32() * 50.0))
+		creature.Scale(0.2, 0.2, 0.2)
+		creature.Rotate(180, mgl32.Vec3{1, 0, 0})
+	}
 
 	// Moves the dragon
 	dragon.ResetModel()
@@ -323,11 +354,16 @@ func drawLoop(glw *wrapper.Glw, delta float64) {
 		shaderManager.SetUniform4f(name, "tone", water.ColorTone.X(), water.ColorTone.Y(), water.ColorTone.Z(), water.ColorTone.W())
 	}
 
-	//	shaderManager.EnableShader("colorMaterial")
-//	gopher.DrawObject(shaderManager.CurrentShader())
-//
+		shaderManager.EnableShader("colorMaterial")
+	gopher.DrawObject(shaderManager.CurrentShader())
+
 	shaderManager.EnableShader("bumpMapMaterial")
 	gingerbreadHouse.DrawObject(shaderManager.CurrentShader())
+
+	for _, creature := range seaCreatures {
+		creature.DrawObject(shaderManager.CurrentShader())
+	}
+
 //
 //	shaderManager.EnableShader("textureMaterial")
 //	dragon.DrawObject(shaderManager.CurrentShader())
@@ -376,6 +412,35 @@ func applyAnimations (delta float64) {
 		animationProgress = 0.0
 		incSeed++
 	}
+
+	incStep := (float32(delta) * 20.0)
+
+	// Animate the Planets
+	for index, creature := range seaCreatures {
+		pair := float32(1.0)
+		// Gets the current Progress
+		if (index % 2) == 0 {
+			pair = -1.0
+		}
+
+		// Inverts direction
+		fishAnimationProgress[index] += (pair * incStep)
+
+		// Calculates the Next Step
+		step := (360.0 / 1000.0) * float64(len(seaCreatures) - index) * float64(fishAnimationProgress[index])
+
+		// Calculates the Next position
+		var x float32 = (float32(index) * 3.0) * float32(math.Cos(step * float64(models.DEG_TO_RADIANS)))
+		var y float32 = 12
+		var z float32 = (float32(index) * 3.0) * float32(math.Sin(step * float64(models.DEG_TO_RADIANS)))
+
+		// Resets model and applies transformations
+		creature.ResetModel()
+		creature.Translate(x, y, z)
+		creature.Scale(0.2, 0.2, 0.2)
+		creature.Rotate(180, mgl32.Vec3{1, 0, 0})
+		creature.Rotate(-90, mgl32.Vec3{0, 0, pair})
+	}
 }
 
 //
@@ -389,13 +454,13 @@ func applyAnimations (delta float64) {
 // @param mods (glfw.ModifierKey) the pressed modified keys.
 //
 func keyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-	var keySpeed float32 = 0.5
+	var keySpeed float32 = 0.05
 	var position mgl32.Vec4 = mgl32.Vec4{0, 0, 0, 0}
 	var rotation mgl32.Vec4 = mgl32.Vec4{0, 0, 0, 0}
 	var zoom float32 = 0.0
 
 	// Increases the Speed of the Light Point
-	if selected_model.GetName() == "Light Point" {
+	if selected_model.GetName() != "Terrain" {
 		keySpeed = 0.5
 	}
 

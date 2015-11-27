@@ -15,7 +15,7 @@ out vec4 outputColor;
 // Global constants (for this vertex shader)
 const vec4 colorAmbientGlobal   = vec4(0.05, 0.05, 0.05, 1.0);
 const int  shininess            = 15;
-const float radius              = 10.5;
+const float radius              = 50.5;
 
 void main() {
     // Extract the normal from the normal map
