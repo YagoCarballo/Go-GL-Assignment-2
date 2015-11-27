@@ -20,7 +20,7 @@ const float radius              = 50.5;
 void main() {
     // Extract the normal from the normal map
     vec3 normal = normalize(texture(NormalTextureSampler, textureCoordinates.st).rgb * 2.0 - 1.0);
-    vec3 lightNormal = normalize(matrixNormal * normal);
+    vec3 lightNormal = normalize(matrixNormal * -normal);
 
     vec4 colorDiffuse   = texture(DiffuseTextureSampler, textureCoordinates.st);
     vec4 colorAmbient   = vec4(colorDiffuse.xyz * 0.2, 1.0);

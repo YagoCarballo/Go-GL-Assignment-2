@@ -106,7 +106,7 @@ func (objectLoader *WavefrontObject) DrawObject(shaderProgram uint32) {
 			gl.Uniform4f(specularUniform, object.Material.KsR, object.Material.KsG, object.Material.KsB, object.Material.Tr); // Specular colour.
 			gl.Uniform4f(emissiveUniform, object.Material.KeR, object.Material.KeG, object.Material.KeB, object.Material.Tr); // Emissive colour.
 
-			if object.Texture != 0 {
+			if object.Material.Texture != 0 {
 				textureUniform := gl.GetUniformLocation(shaderProgram, gl.Str("DiffuseTextureSampler\x00"))
 				gl.Uniform1i(textureUniform, 0)
 
@@ -117,13 +117,13 @@ func (objectLoader *WavefrontObject) DrawObject(shaderProgram uint32) {
 				gl.Uniform1i(specularTextureUniform, 2)
 
 				gl.ActiveTexture(gl.TEXTURE0)
-				gl.BindTexture(gl.TEXTURE_2D, object.Texture)
+				gl.BindTexture(gl.TEXTURE_2D, object.Material.Texture)
 
 				gl.ActiveTexture(gl.TEXTURE1)
-				gl.BindTexture(gl.TEXTURE_2D, object.NormalMap)
+				gl.BindTexture(gl.TEXTURE_2D, object.Material.NormalMap)
 
 				gl.ActiveTexture(gl.TEXTURE2)
-				gl.BindTexture(gl.TEXTURE_2D, object.SpecularMap)
+				gl.BindTexture(gl.TEXTURE_2D, object.Material.SpecularMap)
 			}
 		}
 

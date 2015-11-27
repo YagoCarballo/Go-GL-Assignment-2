@@ -33,6 +33,10 @@ type MtlData struct {
 	MapKD		  string	// Map Texture
 	MapKS		  string	// Map Specular
 	MapBump		  string	// Map Normals
+
+	Texture		  uint32	  // Texture Pointer
+	NormalMap	  uint32	  // Normal Map Texture Pointer
+	SpecularMap	  uint32	  // Specular Map Texture Pointer
 }
 
 // Load a Wavefront .mtl file which is a text representation of one
@@ -106,6 +110,9 @@ func (loader *Loader) LoadMTL(filename string) (data []*MtlData, err error) {
 				"",
 				"",
 				"",
+				0,
+				0,
+				0,
 			})
 
 

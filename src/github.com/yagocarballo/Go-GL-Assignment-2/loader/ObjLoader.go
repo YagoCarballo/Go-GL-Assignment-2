@@ -32,9 +32,6 @@ type ObjectData struct {
 
 	Model                      mgl32.Mat4 // Transformation Info
 	Material                   *MtlData   // Material Info
-	Texture					   uint32	  // Texture Pointer
-	NormalMap				   uint32	  // Normal Map Texture Pointer
-	SpecularMap				   uint32	  // Specular Map Texture Pointer
 }
 
 type Loader struct {
@@ -112,10 +109,12 @@ func (loader *Loader) Load (filename string) (objectsData []*ObjectData, err err
 			if objectData, merr := loader.objectToObjectData(object.name, object_data, faces); merr == nil {
 				objectData.Material = loader.Materials[object_data.material]
 
+				fmt.Printf(">====--> (%s) using material : %s\n", object.name, objectData.Material.Name)
+
 				if objectData.Material != nil {
 					if objectData.Material.MapBump != "" {
 						var bumperr error
-						objectData.NormalMap, bumperr = loader.LoadTexture("resources/models/" + objectData.Material.MapBump)
+						objectData.Material.NormalMap, bumperr = loader.LoadTexture("resources/models/" + objectData.Material.MapBump)
 						if bumperr != nil {
 							return objectsData, fmt.Errorf("Bump Map %s: %s", objectData.Material.MapBump, bumperr)
 						}
@@ -124,7 +123,7 @@ func (loader *Loader) Load (filename string) (objectsData []*ObjectData, err err
 					if objectData.Material.MapKD != "" {
 						var texErr error
 						// Load the texture
-						objectData.Texture, texErr = loader.LoadTexture("resources/models/" + objectData.Material.MapKD)
+						objectData.Material.Texture, texErr = loader.LoadTexture("resources/models/" + objectData.Material.MapKD)
 						if texErr != nil {
 							return objectsData, fmt.Errorf("Texture %s: %s", objectData.Material.MapKD, texErr)
 						}
@@ -133,7 +132,7 @@ func (loader *Loader) Load (filename string) (objectsData []*ObjectData, err err
 					if objectData.Material.MapKS != "" {
 						var specErr error
 						// Load the texture
-						objectData.SpecularMap, specErr = loader.LoadTexture("resources/models/" + objectData.Material.MapKS)
+						objectData.Material.SpecularMap, specErr = loader.LoadTexture("resources/models/" + objectData.Material.MapKS)
 						if specErr != nil {
 							return objectsData, fmt.Errorf("Specular Map %s: %s", objectData.Material.MapKS, specErr)
 						}

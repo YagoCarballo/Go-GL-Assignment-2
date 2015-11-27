@@ -50,6 +50,8 @@ var water 					*models.Terrain
 var gopher 					*models.WavefrontObject
 var gingerbreadHouse        *models.WavefrontObject
 var dragon       		 	*models.WavefrontObject
+var tree       		 		*models.WavefrontObject
+var car       		 		*models.WavefrontObject
 var seaCreatures       		[]*models.WavefrontObject
 
 // Index of a uniform to switch the colour mode in the vertex shader
@@ -218,6 +220,20 @@ func InitApp(glw *wrapper.Glw) {
 	dragon.LoadObject("./resources/models/dragon/dragon.obj")
 	dragon.CreateObject()
 
+	// Creates the Tree
+	tree = models.NewObjectLoader()
+	tree.LoadObject("./resources/models/tree/tree.obj")
+	tree.CreateObject()
+
+
+	// Creates the Car
+	car = models.NewObjectLoader()
+	car.LoadObject("./resources/models/car/car.obj")
+	car.CreateObject()
+	for  _, obj := range car.Objects {
+		fmt.Println(obj)
+	}
+
 	// Creates Sea Creatures
 	seed := rand.NewSource(time.Now().UnixNano())
 	random := rand.New(seed)
@@ -274,9 +290,11 @@ func InitialModelTransforms () {
 
 	// Apply the initial Gopher Position
 	gopher.ResetModel()
-	gopher.Scale(0.3, 0.3, 0.3)
-	gopher.Rotate(-90.65, mgl32.Vec3{1, 0, 0})
-	gopher.Rotate(-1.50, mgl32.Vec3{0, 1, 0})
+	gopher.Translate(0.0, 1.8, -30.0)
+	gopher.Scale(3.0, 3.0, 3.0)
+	gopher.Rotate(1.7, mgl32.Vec3{1, 0, 0})
+	gopher.Rotate(1.5, mgl32.Vec3{0, 1, 0})
+	gopher.Rotate(1.5, mgl32.Vec3{0, 0, 1})
 
 	// Moves the House
 	gingerbreadHouse.ResetModel()
@@ -296,6 +314,27 @@ func InitialModelTransforms () {
 
 	// Moves the dragon
 	dragon.ResetModel()
+	dragon.Translate(-18.0, -3.0, -30.0)
+	dragon.Scale(3.0, 3.0, 3.0)
+	dragon.Rotate(1.7, mgl32.Vec3{1, 0, 0})
+	dragon.Rotate(1.5, mgl32.Vec3{0, 1, 0})
+	dragon.Rotate(1.5, mgl32.Vec3{0, 0, 1})
+
+	// Moves the tree
+	tree.ResetModel()
+	tree.Translate(0.0, 4.0, 0.0)
+//	tree.Scale(3.0, 3.0, 3.0)
+	tree.Rotate(1.7, mgl32.Vec3{1, 0, 0})
+	tree.Rotate(1.5, mgl32.Vec3{0, 1, 0})
+	tree.Rotate(1.5, mgl32.Vec3{0, 0, 1})
+
+	// Moves the car
+	car.ResetModel()
+	car.Translate(18.0, 4.0, -10.0)
+//	car.Scale(3.0, 3.0, 3.0)
+	car.Rotate(1.7, mgl32.Vec3{1, 0, 0})
+	car.Rotate(1.5, mgl32.Vec3{0, 1, 0})
+	car.Rotate(1.5, mgl32.Vec3{0, 0, 1})
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -354,9 +393,6 @@ func drawLoop(glw *wrapper.Glw, delta float64) {
 		shaderManager.SetUniform4f(name, "tone", water.ColorTone.X(), water.ColorTone.Y(), water.ColorTone.Z(), water.ColorTone.W())
 	}
 
-		shaderManager.EnableShader("colorMaterial")
-	gopher.DrawObject(shaderManager.CurrentShader())
-
 	shaderManager.EnableShader("bumpMapMaterial")
 	gingerbreadHouse.DrawObject(shaderManager.CurrentShader())
 
@@ -364,16 +400,28 @@ func drawLoop(glw *wrapper.Glw, delta float64) {
 		creature.DrawObject(shaderManager.CurrentShader())
 	}
 
-//
-//	shaderManager.EnableShader("textureMaterial")
-//	dragon.DrawObject(shaderManager.CurrentShader())
+	shaderManager.EnableShader("textureMaterial")
+	dragon.DrawObject(shaderManager.CurrentShader())
+
+	tree.DrawObject(shaderManager.CurrentShader())
+
+	shaderManager.EnableShader("colorMaterial")
+	car.DrawObject(shaderManager.CurrentShader())
+
+	// Enables Transparencies
+	gl.Enable(gl.BLEND)
+		gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+	//	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+
+//	shaderManager.EnableShader("colorMaterial")
+	gopher.DrawObject(shaderManager.CurrentShader())
+
+	gl.BlendFunc(gl.SRC_COLOR, gl.ONE)
 
 	shaderManager.EnableShader("terrain")
-	gl.Enable(gl.BLEND)
-//	gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
-	gl.BlendFunc(gl.SRC_COLOR, gl.ONE)
-//	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 	water.DrawObject(shaderManager.CurrentShader())
+
+	// Disables transparencies
 	gl.Disable(gl.BLEND)
 
 
@@ -455,12 +503,13 @@ func applyAnimations (delta float64) {
 //
 func keyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 	var keySpeed float32 = 0.05
+	var moveSpeed float32 = 0.5
 	var position mgl32.Vec4 = mgl32.Vec4{0, 0, 0, 0}
 	var rotation mgl32.Vec4 = mgl32.Vec4{0, 0, 0, 0}
 	var zoom float32 = 0.0
 
 	// Increases the Speed of the Light Point
-	if selected_model.GetName() != "Terrain" {
+	if selected_model.GetName() != "Terrain" && selected_model.GetName() != "View" {
 		keySpeed = 0.5
 	}
 
@@ -504,22 +553,22 @@ func keyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Ac
 
 	// Applies Movement
 	case glfw.KeyQ:
-		position = mgl32.Vec4{0, 0, keySpeed, 0}
+		position = mgl32.Vec4{0, 0, moveSpeed, 0}
 
 	case glfw.KeyW:
-		position = mgl32.Vec4{0, -keySpeed, 0, 0}
+		position = mgl32.Vec4{0, -moveSpeed, 0, 0}
 
 	case glfw.KeyE:
-		position = mgl32.Vec4{0, 0, -keySpeed, 0}
+		position = mgl32.Vec4{0, 0, -moveSpeed, 0}
 
 	case glfw.KeyA:
-		position = mgl32.Vec4{keySpeed, 0, 0, 0}
+		position = mgl32.Vec4{moveSpeed, 0, 0, 0}
 
 	case glfw.KeyS:
-		position = mgl32.Vec4{0, keySpeed, 0, 0}
+		position = mgl32.Vec4{0, moveSpeed, 0, 0}
 
 	case glfw.KeyD:
-		position = mgl32.Vec4{-keySpeed, 0, 0, 0}
+		position = mgl32.Vec4{-moveSpeed, 0, 0, 0}
 
 	case glfw.KeyTab:
 //		position = mgl32.Vec4{0, 0, 0, speed}
