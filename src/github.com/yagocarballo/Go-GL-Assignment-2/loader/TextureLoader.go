@@ -11,12 +11,24 @@ import (
 	_ "golang.org/x/image/bmp"
 
 	"github.com/go-gl/gl/all-core/gl"
+	"github.com/kardianos/osext"
 )
 
 func (loader *Loader) LoadTexture(file string) (uint32, error) {
 	imgFile, err := os.Open(file)
 	if err != nil {
-		return 0, err
+		// Get the Folder of the current Executable
+		dir, err := osext.ExecutableFolder()
+		if err != nil {
+			return 0, err
+		}
+
+		// Read the file and return content or error
+		var secondErr error
+		imgFile, secondErr = os.Open(fmt.Sprintf("%s/%s", dir, file))
+		if secondErr != nil {
+			return 0, secondErr
+		}
 	}
 
 	img, _, err := image.Decode(imgFile)

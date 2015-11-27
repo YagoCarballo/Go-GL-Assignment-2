@@ -7,55 +7,36 @@
 - Go
 - Git
 - GCC
-- [Gigo](https://github.com/LyricalSecurity/gigo)
 
 ##### How to Install
 
-###### Install Gigo
-
-```bash
-
-## Clone Gigo's Repo
-$ git clone https://github.com/LyricalSecurity/gigo.git && cd gigo
-
-## Set Go's Path
-$ export GOPATH=`pwd`
-
-## Get Gigo's Dependencies
-$ go get github.com/LyricalSecurity/gigo/actions
-
-## Build Gigo
-$ go build -o dist/gigo main.go
-
-## Move Gigo to Go's Bin Directory
-$ mv dist/gigo /usr/local/go/bin/gigo
-
-## Add Go's Bin directory to the PATH (If not added already)
-
-
-```
+###### To get the App
+$ go get github.com/yagocarballo/Go-GL-Assignment-2 ## this generates the `binary` in the `bin` directory
 
 ###### Compile or Run the App
 
 ```bash
 
 ## To run the app
-go run basic.go
+go run $GOPATH/src/github.com/yagocarballo/Go-GL-Assignment-2/basic.go
 
 ## To Compile the App (The generated binary will run without the need of having installed go, gcc or git)
-go build -o dist/basic basic.go
+$ go get github.com/yagocarballo/Go-GL-Assignment-2 ## this generates the `binary` in the `bin` directory
+
+## or
+$ go build -o dist/basic $GOPATH/src/github.com/yagocarballo/Go-GL-Assignment-2/basic.go
 
 ## the last command generates the binary file in the `dist` folder
 
 ```
 
-> Important: To open the Binary, you need to be in the root of the project (or have the shaders folder in the same folder)
-> - If the shaders folder is not in the same path the program will break when running.
+> Important: To open the Binary, you need to be in the root of the project (or have the resources folder in the same folder)
+> - If the resources folder is not in the same path the program will break when running.
 >
 > ```bash
 > 
 > ## from the project's root run, to open the app
-> $ dist/basic
+> $ bin/Go-GL-Assignment-2 
 >
 > ```
 
@@ -106,11 +87,11 @@ Install TDM-GCC from [http://tdm-gcc.tdragon.net/](http://tdm-gcc.tdragon.net/) 
 
 **Step 7**
 
-- Set the `GOPATH` variable to be the same as the project path with /go_modules at the end 
+- Set the `GOPATH` variable to be the same as the project
 
 ```bash
 
-set GOPATH=<path-to-the-project>/go_modules
+set GOPATH=<path-to-the-project>
 
 ```
 
@@ -121,16 +102,9 @@ set GOPATH=<path-to-the-project>/go_modules
 ```bash
 
 ## Gets the OpenGL Versions Used by this project
-go get github.com/go-gl/gl/all-core/gl
+go get github.com/yagocarballo/Go-GL-Assignment-2
 
-## Gets the GLFW Window Wrapper
-go get github.com/go-gl/glfw/v3.1/glfw
-
-## Gets the MGL32 Math Library
-go get github.com/go-gl/mathgl/mgl32
-
-## This library is used to find the path where the executable is when running a compiled version
-go get github.com/kardianos/osext
+## this generates the `.exe` in the `bin` directory
 
 ```
 
@@ -138,35 +112,41 @@ go get github.com/kardianos/osext
 
 **Step 9**
 
-- All the dependencies are now installed, and the project can be compiled.
+- All the dependencies are now downloaded, and the project has been compiled.
 
 ```bash
 
 ## To run the app
-go run basic.go
+./bin/Go-GL-Assignment-2.exe
+
+## or
+go run $GOPATH/src/github.com/yagocarballo/Go-GL-Assignment-2/basic.go
 
 ## To Compile the App (The generated .exe will run without the need of having installed go, gcc or git)
-go build -o dist/basic.exe basic.go
+go get github.com/yagocarballo/Go-GL-Assignment-2 ## this generates the `.exe` in the `bin` directory
+
+## or
+go build -o dist/basic.exe $GOPATH/src/github.com/yagocarballo/Go-GL-Assignment-2/basic.go
 
 ## the last command generates the `.exe` file in the `dist` folder
 
 ```
 
-> Important: To open the Binary, you need to be in the root of the project (or have the shaders folder in the same folder)
-> - If the shaders folder is not in the same path the program will break when running.
+> Important: To open the Binary, you need to be in the root of the project (or have the resources folder in the same folder)
+> - If the resources folder is not in the same path the program will break when running.
 >
 > ```bash
 > 
 > ## Copy the shaders folder to dist (select `D` when asked)
-> xcopy shaders "dist/shaders" 
+> xcopy shaders "bin/resources" 
 > 
-> ## Move to the `dist` folder
-> cd dist
+> ## Move to the `bin` folder
+> cd bin
 > 
 > ## Run the App
-> basic.exe
+> Go-GL-Assignment-2.exe
 >
 > ```
 
-> If the terminal is closed next time is opened the `GOPATH` variable needs to be set again with `set GOPATH=<path-to-the-project>/go_modules`
+> If the terminal is closed next time is opened the `GOPATH` variable needs to be set again with `set GOPATH=<path-to-the-project>`
 

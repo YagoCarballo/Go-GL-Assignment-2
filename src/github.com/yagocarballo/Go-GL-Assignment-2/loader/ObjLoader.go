@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/yagocarballo/Go-GL-Assignment-2/wrapper"
+	"github.com/kardianos/osext"
 )
 
 type ObjectData struct {
@@ -92,10 +93,21 @@ func (loader *Loader) Load (filename string) (objectsData []*ObjectData, err err
 	objectsData = []*ObjectData{}
 
 	file, err := os.Open(filename)
-
 	if err != nil {
-		log.Println(err)
-		return objectsData, err
+		// Get the Folder of the current Executable
+		dir, err := osext.ExecutableFolder()
+		if err != nil {
+			log.Println(err)
+			return objectsData, fmt.Errorf("could not open %s %s", filename, err)
+		}
+
+		// Read the file and return content or error
+		var secondErr error
+		file, secondErr = os.Open(fmt.Sprintf("%s/%s", dir, file))
+		if secondErr != nil {
+			log.Println(secondErr)
+			return objectsData, fmt.Errorf("could not open %s %s", filename, secondErr)
+		}
 	}
 
 	defer file.Close()

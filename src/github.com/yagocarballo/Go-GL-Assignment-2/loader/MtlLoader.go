@@ -17,6 +17,7 @@ import (
 	"log"
 	"os"
 	"github.com/yagocarballo/Go-GL-Assignment-2/wrapper"
+	"github.com/kardianos/osext"
 )
 
 // MtlData holds colour and alpha information.
@@ -51,10 +52,21 @@ func (loader *Loader) LoadMTL(filename string) (data []*MtlData, err error) {
 	materials := []*MtlData{}
 
 	file, err := os.Open(filename)
-
 	if err != nil {
-		log.Println(err)
-		return materials, fmt.Errorf("could not open %s %s", filename, err)
+		// Get the Folder of the current Executable
+		dir, err := osext.ExecutableFolder()
+		if err != nil {
+			log.Println(err)
+			return materials, fmt.Errorf("could not open %s %s", filename, err)
+		}
+
+		// Read the file and return content or error
+		var secondErr error
+		file, secondErr = os.Open(fmt.Sprintf("%s/%s", dir, file))
+		if secondErr != nil {
+			log.Println(secondErr)
+			return materials, fmt.Errorf("could not open %s %s", filename, secondErr)
+		}
 	}
 
 	var f1, f2, f3 float32
