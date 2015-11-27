@@ -125,6 +125,14 @@ func (objectLoader *WavefrontObject) DrawObject(shaderProgram uint32) {
 				gl.ActiveTexture(gl.TEXTURE2)
 				gl.BindTexture(gl.TEXTURE_2D, object.Material.SpecularMap)
 			}
+
+			if object.Material.Tr < 1.0 {
+				// Enables Transparencies
+				gl.Enable(gl.BLEND)
+//				gl.BlendFunc(gl.SRC_COLOR, gl.ONE)
+//				gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+				gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+			}
 		}
 
 		// Geometry
@@ -187,6 +195,9 @@ func (objectLoader *WavefrontObject) DrawObject(shaderProgram uint32) {
 		gl.GetBufferParameteriv(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE, &size);
 		gl.DrawElements(gl.TRIANGLES, int32(len(object.Faces)), gl.UNSIGNED_SHORT, nil)
 //		gl.DrawElements(gl.POINTS, int32(len(object.Faces)), gl.UNSIGNED_SHORT, nil)
+
+		// Disables transparencies
+		gl.Disable(gl.BLEND)
 	}
 }
 

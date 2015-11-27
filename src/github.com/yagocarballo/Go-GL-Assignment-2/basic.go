@@ -50,7 +50,7 @@ var water 					*models.Terrain
 var gopher 					*models.WavefrontObject
 var gingerbreadHouse        *models.WavefrontObject
 var dragon       		 	*models.WavefrontObject
-var tree       		 		*models.WavefrontObject
+var wall                    *models.WavefrontObject
 var car       		 		*models.WavefrontObject
 var seaCreatures       		[]*models.WavefrontObject
 
@@ -221,18 +221,15 @@ func InitApp(glw *wrapper.Glw) {
 	dragon.CreateObject()
 
 	// Creates the Tree
-	tree = models.NewObjectLoader()
-	tree.LoadObject("./resources/models/tree/tree.obj")
-	tree.CreateObject()
+	wall = models.NewObjectLoader()
+	wall.LoadObject("./resources/models/wall/wall.obj")
+	wall.CreateObject()
 
 
 	// Creates the Car
 	car = models.NewObjectLoader()
 	car.LoadObject("./resources/models/car/car.obj")
 	car.CreateObject()
-	for  _, obj := range car.Objects {
-		fmt.Println(obj)
-	}
 
 	// Creates Sea Creatures
 	seed := rand.NewSource(time.Now().UnixNano())
@@ -298,8 +295,8 @@ func InitialModelTransforms () {
 
 	// Moves the House
 	gingerbreadHouse.ResetModel()
-	gingerbreadHouse.Translate(1.5, 6.0, 0.0)
-	gingerbreadHouse.Scale(1.0, 1.0, 1.0)
+	gingerbreadHouse.Translate(10.5, 1.0, 20.0)
+	gingerbreadHouse.Scale(3.0, 3.0, 3.0)
 	gingerbreadHouse.Rotate(3.5, mgl32.Vec3{1, 0, 0})
 	gingerbreadHouse.Rotate(-0.15, mgl32.Vec3{0, 0, 1})
 
@@ -321,18 +318,18 @@ func InitialModelTransforms () {
 	dragon.Rotate(1.5, mgl32.Vec3{0, 0, 1})
 
 	// Moves the tree
-	tree.ResetModel()
-	tree.Translate(0.0, 4.0, 0.0)
+	wall.ResetModel()
+	wall.Translate(-5.0, 4.0, 0.0)
 //	tree.Scale(3.0, 3.0, 3.0)
-	tree.Rotate(1.7, mgl32.Vec3{1, 0, 0})
-	tree.Rotate(1.5, mgl32.Vec3{0, 1, 0})
-	tree.Rotate(1.5, mgl32.Vec3{0, 0, 1})
+	wall.Rotate(1.7, mgl32.Vec3{1, 0, 0})
+	wall.Rotate(1.5, mgl32.Vec3{0, 1, 0})
+	wall.Rotate(1.5, mgl32.Vec3{0, 0, 1})
 
 	// Moves the car
 	car.ResetModel()
-	car.Translate(18.0, 4.0, -10.0)
-//	car.Scale(3.0, 3.0, 3.0)
-	car.Rotate(1.7, mgl32.Vec3{1, 0, 0})
+	car.Translate(0.0, 6.0, -10.0)
+	car.Scale(3.0, 3.0, 3.0)
+	car.Rotate(1.5, mgl32.Vec3{1, 0, 0})
 	car.Rotate(1.5, mgl32.Vec3{0, 1, 0})
 	car.Rotate(1.5, mgl32.Vec3{0, 0, 1})
 }
@@ -347,7 +344,7 @@ func InitialModelTransforms () {
 //
 func drawLoop(glw *wrapper.Glw, delta float64) {
 	// Sets the Clear Color (Background Color)
-	gl.ClearColor(0.048, 0.356, 0.648, 1)
+	gl.ClearColor(0.028, 0.156, 0.348, 1)
 
 	// Clears the Window
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
@@ -395,6 +392,7 @@ func drawLoop(glw *wrapper.Glw, delta float64) {
 
 	shaderManager.EnableShader("bumpMapMaterial")
 	gingerbreadHouse.DrawObject(shaderManager.CurrentShader())
+	wall.DrawObject(shaderManager.CurrentShader())
 
 	for _, creature := range seaCreatures {
 		creature.DrawObject(shaderManager.CurrentShader())
@@ -403,18 +401,15 @@ func drawLoop(glw *wrapper.Glw, delta float64) {
 	shaderManager.EnableShader("textureMaterial")
 	dragon.DrawObject(shaderManager.CurrentShader())
 
-	tree.DrawObject(shaderManager.CurrentShader())
-
 	shaderManager.EnableShader("colorMaterial")
+	gopher.DrawObject(shaderManager.CurrentShader())
 	car.DrawObject(shaderManager.CurrentShader())
 
 	// Enables Transparencies
 	gl.Enable(gl.BLEND)
-		gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+//		gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 	//	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
-//	shaderManager.EnableShader("colorMaterial")
-	gopher.DrawObject(shaderManager.CurrentShader())
 
 	gl.BlendFunc(gl.SRC_COLOR, gl.ONE)
 
@@ -447,7 +442,7 @@ var incSeed int64
 //
 func applyAnimations (delta float64) {
 	animationProgress += float32(delta) * float32(1000)
-	if animationProgress > 30 {
+	if animationProgress > 10 {
 		model := water.Model
 		water = models.NewTerrainWithSeed(
 			incSeed,
@@ -531,10 +526,10 @@ func keyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Ac
 		selected_model = dragon
 
 	case glfw.Key4:
-		selected_model = lightPoint
+		selected_model = car
 
 	case glfw.Key5:
-		selected_model = lightPoint
+		selected_model = wall
 
 	case glfw.Key6:
 		selected_model = lightPoint
@@ -718,56 +713,55 @@ func reshape(window *glfw.Window, width, height int) {
 func printKeyboardMappings () {
 	fmt.Println(`
 
-							Keyboard Instructions
-							---------------------
+Keyboard Instructions
+---------------------
 
 Select A Model with a number
 - The name of the selected model is displayed on the title of the window.
 - Once a model is selected, it can be moved using the Keys Below
 - Move and Rotate work like a cross: ( Example )
 
-						| W   \ S 	-->  Up  \ Down	 |
-						| A   \ D 	--> Left \ Right |
-						| Q   \ E 	--> Back \ Front |
-						| Tab \ R 	-->   -W \ +W	 |
+| W   \ S 	-->  Up  \ Down	 |
+| A   \ D 	--> Left \ Right |
+| Q   \ E 	--> Back \ Front |
+| Tab \ R 	-->   -W \ +W	 |
 
--------------------------------------------------------------------------------
-	 |-----||-----||-----||-----||-----||-----||-----||-----||-----||-----|
-	 |  1  ||  2  ||  3  ||  4  ||  5  ||  6  ||  7  ||  8  ||  9  ||  0  |
-	 |-----||-----||-----||-----||-----||-----||-----||-----||-----||-----|
+-----------------------------------------------------------------------
+ |-----||-----||-----||-----||-----||-----||-----||-----||-----||-----|
+ |  1  ||  2  ||  3  ||  4  ||  5  ||  6  ||  7  ||  8  ||  9  ||  0  |
+ |-----||-----||-----||-----||-----||-----||-----||-----||-----||-----|
 
-					1. Cube			| 6.
-					2. Sphere		| 7.
-					3. Cylinder		| 8.
-					4. Cog			| 9. Camera / View
-					5. Small Cog	| 0. Light Point
-
-
-			Position (Move)							   Rotation (Rotate)
---------------------------------------------------------------------------
-
-|---------||-----||-----||-----||-----|  |-----||-----||-----||-----||-----|
-|   Tab   ||  Q  ||  W  ||  E  ||  R  |  |  Y  ||  U  ||  I  ||  O  ||  P  |
-|---------||-----||-----||-----||-----|  |-----||-----||-----||-----||-----|
-		   |-----||-----||-----|	      	    |-----||-----||-----|
-		   |  A  ||  S  ||  D  |	      	    |  J  ||  K  ||  L  |
-		   |-----||-----||-----|	      	  	|-----||-----||-----|
+1. Gopher				| 6.
+2. Gingerbread House	| 7.
+3. Dragon				| 8.
+4. Car					| 9. Camera / View
+5. Wall					| 0. Light Point
 
 
- Zoom (-/+)  | Speed Up/Down				Instructions / Draw Mode / Color
-----------------------------					---------------------
+		Position (Move)						   Rotation (Rotate)
+------------------------------------------------------------------------
 
-|-----||-----||-----||-----|					|-----||-----||-----|
-|  Z  ||  X  ||  Z  ||  X  |					|  B  ||  N  ||  M  |
-|-----||-----||-----||-----|					|-----||-----||-----|
--------------------------------------------------------------------------------
+|-------||-----||-----||-----||-----||-----||-----||-----||-----||-----|
+|  Tab  ||  Q  ||  W  ||  E  ||  R  ||  Y  ||  U  ||  I  ||  O  ||  P  |
+|-------||-----||-----||-----||-----||-----||-----||-----||-----||-----|
+		 |-----||-----||-----|	      	    |-----||-----||-----|
+		 |  A  ||  S  ||  D  |	      	    |  J  ||  K  ||  L  |
+		 |-----||-----||-----|	      	    |-----||-----||-----|
+
+
+ Zoom (-/+)  | Speed Up/Down		Instructions / Draw Mode / Color
+----------------------------			--------------------
+|-----||-----||-----||-----|			|-----||-----||-----|
+|  Z  ||  X  ||  Z  ||  X  |			|  B  ||  N  ||  M  |
+|-----||-----||-----||-----|			|-----||-----||-----|
+-------------------------------------------------------------
 
 								DEBUG Options
 
 - The Enter Key will reload the Shaders.
 - The Space Key will print the current selected model matrix.
 
--------------------------------------------------------------------------------
+-------------------------------------------------------------
 
 
 	`)

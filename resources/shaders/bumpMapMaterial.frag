@@ -5,7 +5,7 @@ uniform sampler2D NormalTextureSampler;
 uniform sampler2D SpecularTextureSampler;
 
 in vec4 lightPosition;
-in vec3 lightDirection;
+in vec3 lightNormal, lightDirection;
 in vec2 textureCoordinates;
 in mat3 matrixNormal;
 in vec4 ambientMaterial, diffuseMaterial, specularMaterial, emissiveMaterial;
@@ -20,7 +20,7 @@ const float radius              = 50.5;
 void main() {
     // Extract the normal from the normal map
     vec3 normal = normalize(texture(NormalTextureSampler, textureCoordinates.st).rgb * 2.0 - 1.0);
-    vec3 lightNormal = normalize(matrixNormal * -normal);
+    vec3 lightNormalMod = normalize(normal);
 
     vec4 colorDiffuse   = texture(DiffuseTextureSampler, textureCoordinates.st);
     vec4 colorAmbient   = vec4(colorDiffuse.xyz * 0.2, 1.0);
@@ -29,8 +29,8 @@ void main() {
     float lightDistance = length(lightDirection);
 
     // Normalise interpolated vectors
-    vec3 L = normalize(lightDirection);
-    vec3 N = normalize(lightNormal);
+    vec3 L = normalize(inversesqrt(dot(lightDirection, lightDirection)) * lightDirection);
+    vec3 N = normalize(lightNormalMod);
 
     // Calculate the diffuse component
     vec4 diffuse = max(dot(N, L), 0.0) * colorDiffuse;

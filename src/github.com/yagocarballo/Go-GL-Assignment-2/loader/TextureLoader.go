@@ -8,6 +8,7 @@ import (
 	_ "image/png"
 	_ "image/jpeg"
 	_ "image/gif"
+	_ "golang.org/x/image/bmp"
 
 	"github.com/go-gl/gl/all-core/gl"
 )

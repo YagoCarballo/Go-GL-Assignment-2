@@ -109,8 +109,6 @@ func (loader *Loader) Load (filename string) (objectsData []*ObjectData, err err
 			if objectData, merr := loader.objectToObjectData(object.name, object_data, faces); merr == nil {
 				objectData.Material = loader.Materials[object_data.material]
 
-				fmt.Printf(">====--> (%s) using material : %s\n", object.name, objectData.Material.Name)
-
 				if objectData.Material != nil {
 					if objectData.Material.MapBump != "" {
 						var bumperr error
