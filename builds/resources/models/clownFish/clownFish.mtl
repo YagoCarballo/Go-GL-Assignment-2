@@ -1,0 +1,14 @@
+# Blender MTL File: 'None'
+# Material Count: 1
+
+newmtl RoadKillOut
+Ns 0.000000
+Ka 0.280000 0.280000 0.280000
+Kd 1.000000 1.000000 1.000000
+Ks 0.100000 0.100000 0.100000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 0.996078
+illum 2
+map_Kd clownFish/clownFish_tex.png
+map_Bump clownFish/clownFish_NM.png
