@@ -26,22 +26,19 @@ Almost at the end of the assignment I found some tree models that had a differen
 
 <br />
 ##### References
-
 - Most of the 3D objects come from [http://www.reinerstilesets.de/3d-grafiken/](http://www.reinerstilesets.de/3d-grafiken/)
 - The dragon I used is from an old project I had [https://warofsides.com](https://warofsides.com)
 - The Gopher model [Gopher 3D (https://github.com/golang-samples/gopher-3d)](https://github.com/golang-samples/gopher-3d)
 - The [VU Engine (https://github.com/gazed/vu)](https://github.com/gazed/vu) was used as reference to see how they're doing openGL in Go.
 
 ##### Instructions
-
 Instructions on how to run the app are inside the `readme.md` file (method is a bit different than the first assignment, (as this time I used the "officially recommended" approach to organize the code which is suposed to be easier))
+> Source code will be in `src/github.com/yagocarballo/Go-GL-Assignment-2`
 
 ##### Controls
-
 To control the different objects, you can press one of the numbers and that will select the object (selected object's name will be displayed in the title of the window), then that object can be moved, rotated, scaled or changed the drawing mode (dots, lines or 3D).
 
 The following instructions will be printed to the terminal when opening the App:
-
 ```
 Keyboard Instructions
 ---------------------
