@@ -1,3 +1,5 @@
+![Screenshot](./screenshot.png?raw=true "Screenshot")
+
 ## Build the Project
 
 ### Mac & Linux
